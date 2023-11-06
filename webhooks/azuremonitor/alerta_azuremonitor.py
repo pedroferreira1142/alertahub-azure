@@ -31,6 +31,7 @@ class AzureMonitorWebhook(WebhookBase):
     """
 
     def incoming(self, query_string, payload):
+        attributes = None
         if 'data' in payload:
             # resource=resource,
             # event=event,
@@ -48,7 +49,7 @@ class AzureMonitorWebhook(WebhookBase):
             if payload['schemaId'] == 'azureMonitorCommonAlertSchema':
                 context = payload['data']['alertContext']
                 environment = query_string.get('environment', 'Production')
-                event = context['condition']['allOf']['metricName']
+                event = context['condition']['allOf'][0]['metricName']
                 value = '{} {}'.format(
                     context['condition']['allOf'][0]['metricValue'],
                     context['condition']['allOf'][0]['metricName'])
@@ -59,10 +60,10 @@ class AzureMonitorWebhook(WebhookBase):
                 attributes = {
                     "ciNumber": payload['data']['essentials']['configurationItems'][0]
                 }
-                create_time = payload['data']['essentials']['firedDateTime']
-                tags = [] if payload['data']['properties'] is None else ['{}={}'.format(k, v) for k, v in payload['data']['properties'].items()]
+                create_time = parse_date(payload['data']['essentials']['firedDateTime'])
+                tags = [] if payload['data']['customProperties'] is None else ['{}={}'.format(k, v) for k, v in payload['data']['customProperties'].items()]
 
-                if context['essentials'] == 'Resolved' or context['essentials'] == 'Deactivated':
+                if payload['data']['essentials']['monitorCondition'] == 'Resolved' or context['data']['essentials']['monitorCondition'] == 'Deactivated':
                     severity = 'ok'
                 else:
                     severity = SEVERITY_MAP_COMMON[context.get('severity', DEFAULT_SEVERITY_LEVEL)]
@@ -149,8 +150,7 @@ class AzureMonitorWebhook(WebhookBase):
                                                              payload['properties'].items()]
             event_type = '{}Alert'.format(context['conditionType'])
             create_time = parse_date(context['timestamp'])
-
-        return Alert(
+        alert = Alert(
             resource=resource,
             event=event,
             environment=environment,
@@ -160,9 +160,12 @@ class AzureMonitorWebhook(WebhookBase):
             value=value,
             text=text,
             tags=tags,
-            attributes= attributes if attributes is not None else {},
+            attributes={},
             origin='Azure Monitor',
             type=event_type,
             create_time=create_time,
             raw_data=json.dumps(payload)
         )
+        print(alert)
+
+        return alert
