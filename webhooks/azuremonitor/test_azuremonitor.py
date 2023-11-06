@@ -24,6 +24,79 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
 
         classic_metric_alert = r"""
         {
+            "schemaId": "azureMonitorCommonAlertSchema",
+            "data": {
+                "essentials": {
+                "alertId": "/subscriptions/<subscription ID>/providers/Microsoft.AlertsManagement/alerts/b9569717-bc32-442f-add5-83a997729330",
+                "alertRule": "WCUS-R2-Gen2",
+                "severity": "Sev3",
+                "signalType": "Metric",
+                "monitorCondition": "Resolved",
+                "monitoringService": "Platform",
+                "alertTargetIDs": [
+                    "/subscriptions/<subscription ID>/resourcegroups/pipelinealertrg/providers/microsoft.compute/virtualmachines/wcus-r2-gen2"
+                ],
+                "configurationItems": [
+                    "wcus-r2-gen2"
+                ],
+                "originAlertId": "3f2d4487-b0fc-4125-8bd5-7ad17384221e_PipeLineAlertRG_microsoft.insights_metricAlerts_WCUS-R2-Gen2_-117781227",
+                "firedDateTime": "2019-03-22T13:58:24.3713213Z",
+                "resolvedDateTime": "2019-03-22T14:03:16.2246313Z",
+                "description": "",
+                "essentialsVersion": "1.0",
+                "alertContextVersion": "1.0"
+                },
+                "alertContext": {
+                "properties": null,
+                "conditionType": "SingleResourceMultipleMetricCriteria",
+                "condition": {
+                    "windowSize": "PT5M",
+                    "allOf": [
+                    {
+                        "metricName": "Percentage CPU",
+                        "metricNamespace": "Microsoft.Compute/virtualMachines",
+                        "operator": "GreaterThan",
+                        "threshold": "25",
+                        "timeAggregation": "Average",
+                        "dimensions": [
+                        {
+                            "name": "ResourceId",
+                            "value": "3efad9dc-3d50-4eac-9c87-8b3fd6f97e4e"
+                        }
+                        ],
+                        "metricValue": 7.727
+                    }
+                    ]
+                }
+                },
+                "customProperties": {
+                "Key1": "Value1",
+                "Key2": "Value2"
+                }
+            }
+        }
+        """
+
+        response = self.client.post(
+            '/webhooks/azuremonitor', data=classic_metric_alert, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201, response.data)
+        data = json.loads(response.data.decode('utf-8'))
+        self.assertEqual(data['alert']['resource'], 'ResourceId')
+        self.assertEqual(data['alert']['event'], 'metricName')
+        self.assertEqual(data['alert']['environment'], 'Production')
+        self.assertEqual(data['alert']['severity'], 'informational')
+        self.assertEqual(data['alert']['status'], 'open')
+        self.assertEqual(data['alert']['service'], 'Microsoft.Compute/virtualMachines')
+        self.assertEqual(data['alert']['group'], 'Microsoft.Compute/virtualMachines')
+        self.assertEqual(data['alert']['value'], '7.727')
+        # self.assertEqual(data['alert']['text'],
+        #                  'CRITICAL: 10 Requests (GreaterThanOrEqual 10)')
+        # self.assertEqual(sorted(data['alert']['tags']), [
+        #                  'key1=value1', 'key2=value2'])
+
+        classic_metric_alert = r"""
+        {
             "status": "Activated",
             "context": {
                 "timestamp": "2015-08-14T22:26:41.9975398Z",
