@@ -55,7 +55,7 @@ class AzureMonitorWebhook(WebhookBase):
                     context['condition']['allOf'][0]['metricName'])
                 group = context['condition']['allOf'][0]['metricNamespace']
                 service = context['condition']['allOf'][0]['metricNamespace']
-                resource = context['condition']['allOf'][0]['dimensions'][0]['name']
+                resource = payload['data']['essentials']['configurationItems'][0]
                 event_type = payload['data']['essentials']['signalType']
                 attributes = {
                     "ciNumber": payload['data']['essentials']['configurationItems'][0]
