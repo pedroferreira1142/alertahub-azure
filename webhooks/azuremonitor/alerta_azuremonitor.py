@@ -63,7 +63,7 @@ class AzureMonitorWebhook(WebhookBase):
                 create_time = parse_date(payload['data']['essentials']['firedDateTime'])
                 tags = [] if payload['data']['customProperties'] is None else ['{}={}'.format(k, v) for k, v in payload['data']['customProperties'].items()]
 
-                if payload['data']['essentials']['monitorCondition'] == 'Resolved' or context['data']['essentials']['monitorCondition'] == 'Deactivated':
+                if payload['data']['essentials']['monitorCondition'] == 'Resolved' or payload['data']['essentials']['monitorCondition'] == 'Deactivated':
                     severity = 'ok'
                 else:
                     severity = SEVERITY_MAP_COMMON[context.get('severity', DEFAULT_SEVERITY_LEVEL)]
