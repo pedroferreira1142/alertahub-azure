@@ -66,7 +66,7 @@ class AzureMonitorWebhook(WebhookBase):
                 if payload['data']['essentials']['monitorCondition'] == 'Resolved' or payload['data']['essentials']['monitorCondition'] == 'Deactivated':
                     severity = 'ok'
                 else:
-                    severity = SEVERITY_MAP_COMMON[context.get('severity', DEFAULT_SEVERITY_LEVEL)]
+                    severity = SEVERITY_MAP_COMMON[context.get('severity', DEFAULT_SEVERITY_LEVEL_COMMON)]
 
                 text = '{}: {} {} ({} {})'.format(
                     severity.upper(),
