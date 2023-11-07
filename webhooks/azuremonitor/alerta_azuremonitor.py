@@ -68,6 +68,8 @@ class AzureMonitorWebhook(WebhookBase):
                     tags = [] if payload['data']['customProperties'] is None else ['{}={}'.format(k, v) for k, v in payload['data']['customProperties'].items()]
                 elif (hasattr(context, 'properties') and getattr(context, 'properties') is not None):
                     tags = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
+                else:
+                    tags = []
 
                 if payload['data']['essentials']['monitorCondition'] == 'Resolved' or payload['data']['essentials']['monitorCondition'] == 'Deactivated':
                     severity = 'ok'
