@@ -49,12 +49,15 @@ class AzureMonitorWebhook(WebhookBase):
             if payload['schemaId'] == 'azureMonitorCommonAlertSchema':
                 context = payload['data']['alertContext']
                 environment = query_string.get('environment', 'Production')
-                event = context['condition']['allOf'][0]['metricName']
-                value = '{} {}'.format(
-                    context['condition']['allOf'][0]['metricValue'],
-                    context['condition']['allOf'][0]['metricName'])
-                group = context['condition']['allOf'][0]['metricNamespace']
-                service = [context['condition']['allOf'][0]['metricNamespace']]
+                event = payload['data']['essentials']['alertRule']
+                
+                if (hasattr(context, 'condition') and getattr(context, 'condition') is not None):
+                    value = '{} {}'.format(context['condition']['allOf'][0]['metricValue'], context['condition']['allOf'][0]['metricName'])
+                else:
+                    value = ['{}={}'.format(k, v) for k, v in context['properties'].items()]
+
+                group = payload['data']['essentials']['signalType']
+                service = [payload['data']['essentials']['monitoringService']]
                 resource = payload['data']['essentials']['configurationItems'][0]
                 event_type = payload['data']['essentials']['signalType']
                 attributes = {
@@ -68,13 +71,15 @@ class AzureMonitorWebhook(WebhookBase):
                 else:
                     severity = SEVERITY_MAP_COMMON[context.get('severity', DEFAULT_SEVERITY_LEVEL_COMMON)]
 
-                text = '{}: {} {} ({} {})'.format(
-                    severity.upper(),
-                    context['condition']['allOf'][0]['metricValue'],
-                    context['condition']['allOf'][0]['metricName'],
-                    context['condition']['allOf'][0]['operator'],
-                    context['condition']['allOf'][0]['threshold'])
-
+                if (hasattr(context, 'condition') and getattr(context, 'condition') is not None):
+                    text = '{}: {} {} ({} {})'.format(
+                        severity.upper(),
+                        context['condition']['allOf'][0]['metricValue'],
+                        context['condition']['allOf'][0]['metricName'],
+                        context['condition']['allOf'][0]['operator'],
+                        context['condition']['allOf'][0]['threshold'])
+                else:
+                    text = payload['data']['essentials']['description']
 
             else:
                 context = payload['data']['context']
@@ -160,7 +165,7 @@ class AzureMonitorWebhook(WebhookBase):
             value=value,
             text=text,
             tags=tags,
-            attributes={},
+            attributes = {} if attributes is None else attributes,
             origin='Azure Monitor',
             type=event_type,
             create_time=create_time,
