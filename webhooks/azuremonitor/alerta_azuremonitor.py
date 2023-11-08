@@ -33,19 +33,6 @@ class AzureMonitorWebhook(WebhookBase):
     def incoming(self, query_string, payload):
         attributes = None
         if 'data' in payload:
-            # resource=resource,
-            # event=event,
-            # environment=environment,
-            # severity=severity,
-            # service=service,
-            # group=group,
-            # value=value,
-            # text=text,
-            # tags=tags,
-            # attributes={},
-            # origin='Azure Monitor',
-            # type=event_type,
-            # create_time=create_time,
             if payload['schemaId'] == 'azureMonitorCommonAlertSchema':
                 context = payload['data']['alertContext']
                 environment = query_string.get('environment', 'Production')
@@ -54,7 +41,7 @@ class AzureMonitorWebhook(WebhookBase):
                 if (hasattr(context, 'condition') and getattr(context, 'condition') is not None):
                     value = '{} {}'.format(context['condition']['allOf'][0]['metricValue'], context['condition']['allOf'][0]['metricName'])
                 else:
-                    value = ['{}={}'.format(k, v) for k, v in context['properties'].items()]
+                    value = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
 
                 group = payload['data']['essentials']['signalType']
                 service = [payload['data']['essentials']['monitoringService']]
@@ -64,12 +51,12 @@ class AzureMonitorWebhook(WebhookBase):
                     "ciNumber": payload['data']['essentials']['configurationItems'][0]
                 }
                 create_time = parse_date(payload['data']['essentials']['firedDateTime'])
+                
                 if (hasattr(payload['data'], 'customProperties') and getattr(payload['data'], 'customProperties') is not None):
                     tags = [] if payload['data']['customProperties'] is None else ['{}={}'.format(k, v) for k, v in payload['data']['customProperties'].items()]
-                elif (hasattr(context, 'properties') and getattr(context, 'properties') is not None):
-                    tags = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
                 else:
-                    tags = []
+                    tags = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
+                
 
                 if payload['data']['essentials']['monitorCondition'] == 'Resolved' or payload['data']['essentials']['monitorCondition'] == 'Deactivated':
                     severity = 'ok'
@@ -176,6 +163,5 @@ class AzureMonitorWebhook(WebhookBase):
             create_time=create_time,
             raw_data=json.dumps(payload)
         )
-        print(alert)
 
         return alert

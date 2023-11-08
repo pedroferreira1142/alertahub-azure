@@ -18,9 +18,62 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
 
         custom_webhooks.webhooks['azuremonitor'] = alerta_azuremonitor.AzureMonitorWebhook(
         )
+    def test_azure_monitor_common(self):
+        
+        common_metric_alert = r"""
+        {
+            "schemaId":"azureMonitorCommonAlertSchema",
+            "data":{
+                "essentials":{
+                    "alertId":"/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.AlertsManagement/alerts/12345678-1234-1234-1234-1234567890ab",
+                    "alertRule":"test-ResourceHealthAlertRule",
+                    "severity":"Sev4",
+                    "signalType":"Activity Log",
+                    "monitorCondition":"Fired",
+                    "monitoringService":"Resource Health",
+                    "alertTargetIDs":[
+                        "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.compute/virtualmachines/test-VM"
+                    ],
+                    "configurationItems":[
+                        "test-VM"
+                    ],
+                    "originAlertId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb_123456789012345678901234567890ab",
+                    "firedDateTime":"2023-11-07T08:39:43.111Z",
+                    "description":"Alert rule description",
+                    "essentialsVersion":"1.0",
+                    "alertContextVersion":"1.0"
+                },
+                "alertContext":{
+                    "channels":"Admin, Operation",
+                    "correlationId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    "eventSource":"ResourceHealth",
+                    "eventTimestamp":"2023-11-07T08:39:43.111Z",
+                    "eventDataId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                    "level":"Informational",
+                    "operationName":"Microsoft.Resourcehealth/healthevent/Activated/action",
+                    "operationId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                    "properties":{
+                        "title":"Rebooted by user",
+                        "details":null,
+                        "currentHealthStatus":"Unavailable",
+                        "previousHealthStatus":"Available",
+                        "type":"Downtime",
+                        "cause":"UserInitiated"
+                    },
+                    "status":"Active",
+                    "submissionTimestamp":"2023-11-07T08:39:43.111Z",
+                    "Activity Log Event Description":null
+                }
+            }
+        }
+        """
 
-    def test_azuremonitor_webhook_classic(self):
-        """ See https://docs.microsoft.com/en-us/azure/azure-monitor/platform/alerts-webhooks """
+        response = self.client.post(
+            '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+        self.assertEqual(response.status_code, 201, response.data)
+        data = json.loads(response.data.decode('utf-8'))
+        # print(json.dumps(data, indent=4))
+        self.assertEqual(data['alert']['resource'], 'test-VM')
 
         common_metric_alert = r"""
         {
@@ -79,20 +132,12 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
 
         response = self.client.post(
             '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
-        # self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.status_code, 201, response.data)
         data = json.loads(response.data.decode('utf-8'))
-        self.assertEqual(data['alert']['resource'], 'ResourceId')
-        # self.assertEqual(data['alert']['event'], 'metricName')
-        # self.assertEqual(data['alert']['environment'], 'Production')
-        # self.assertEqual(data['alert']['severity'], 'informational')
-        # self.assertEqual(data['alert']['status'], 'open')
-        # self.assertEqual(data['alert']['service'], 'Microsoft.Compute/virtualMachines')
-        # self.assertEqual(data['alert']['group'], 'Microsoft.Compute/virtualMachines')
-        # self.assertEqual(data['alert']['value'], '7.727')
-        # self.assertEqual(data['alert']['text'],
-        #                  'CRITICAL: 10 Requests (GreaterThanOrEqual 10)')
-        # self.assertEqual(sorted(data['alert']['tags']), [
-        #                  'key1=value1', 'key2=value2'])
+        self.assertEqual(data['alert']['resource'], 'wcus-r2-gen2')
+
+    def test_azuremonitor_webhook_classic(self):
+        """ See https://docs.microsoft.com/en-us/azure/azure-monitor/platform/alerts-webhooks """
 
         classic_metric_alert = r"""
         {
