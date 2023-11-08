@@ -32,7 +32,7 @@ class AzureMonitorWebhook(WebhookBase):
     """
 
     def incoming(self, query_string, payload):
-        attributes = None
+        attributes = {}
         tags = []
         value = []
         if 'data' in payload:
@@ -55,13 +55,19 @@ class AzureMonitorWebhook(WebhookBase):
                 elif ('properties' in context and 'service' in context['properties']):
                     resource = context['properties']['service']
 
-                # resource = payload['data']['essentials']['alertTargetIDs'][0].split("/")[-1] if 'configurationItems' not in payload['data']['essentials'] or len(payload['data']['essentials']['configurationItems']) == 0 else 
                 event_type = payload['data']['essentials']['signalType']
 
+                if 'properties' in context and context['properties'] is not None:
+                    properties_keys = context['properties'].keys()
+                    for key in properties_keys:
+                        attributes[key] = context['properties'][key]
+
                 pattern = r'/subscriptions/[0-9a-fA-F-]+'
-                attributes = {
-                    "subscriptionId": re.sub(pattern, '', payload['data']['essentials']['alertTargetIDs'][0]) if payload['data']['essentials']['alertTargetIDs'] and len(payload['data']['essentials']['alertTargetIDs']) >= 0 is None else ""
-                }
+                attributes.update({
+                    "subscriptionId": re.sub(pattern, '', payload['data']['essentials']['alertTargetIDs'][0]) 
+                        if payload['data']['essentials']['alertTargetIDs'] and len(payload['data']['essentials']['alertTargetIDs']) >= 0 
+                        else ""
+                })
                 create_time = parse_date(payload['data']['essentials']['firedDateTime'])
                 
                 if (hasattr(payload['data'], 'customProperties') and getattr(payload['data'], 'customProperties') is not None):
@@ -169,7 +175,7 @@ class AzureMonitorWebhook(WebhookBase):
             value=value,
             text=text,
             tags=tags,
-            attributes = {} if attributes is None else attributes,
+            attributes = attributes,
             origin='Azure Monitor',
             type=event_type,
             create_time=create_time,
