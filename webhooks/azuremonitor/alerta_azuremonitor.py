@@ -3,6 +3,7 @@ import json
 from alerta.models.alert import Alert
 from alerta.webhooks import WebhookBase
 from dateutil.parser import parse as parse_date
+import re
 
 SEVERITY_MAP = {
     '0': 'critical',       # Critical
@@ -32,29 +33,33 @@ class AzureMonitorWebhook(WebhookBase):
 
     def incoming(self, query_string, payload):
         attributes = None
+        tags = []
+        value = []
         if 'data' in payload:
             if payload['schemaId'] == 'azureMonitorCommonAlertSchema':
                 context = payload['data']['alertContext']
                 environment = query_string.get('environment', 'Production')
-                event = payload['data']['essentials']['alertRule']
+                event = payload['data']['essentials']['monitoringService'] if payload['data']['essentials']['alertRule'] is None else payload['data']['essentials']['alertRule']
                 
                 if (hasattr(context, 'condition') and getattr(context, 'condition') is not None):
                     value = '{} {}'.format(context['condition']['allOf'][0]['metricValue'], context['condition']['allOf'][0]['metricName'])
-                else:
+                elif ('properties' in context):
                     value = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
 
                 group = payload['data']['essentials']['signalType']
                 service = [payload['data']['essentials']['monitoringService']]
-                resource = payload['data']['essentials']['configurationItems'][0]
+                resource = payload['data']['essentials']['alertTargetIDs'][0].split("/")[-1] if len(payload['data']['essentials']['configurationItems']) == 0 else payload['data']['essentials']['configurationItems'][0]
                 event_type = payload['data']['essentials']['signalType']
+
+                pattern = r'/subscriptions/[0-9a-fA-F-]+'
                 attributes = {
-                    "ciNumber": payload['data']['essentials']['configurationItems'][0]
+                    "subscriptionId": re.sub(pattern, '', payload['data']['essentials']['alertTargetIDs'][0]) if payload['data']['essentials']['alertTargetIDs'] and len(payload['data']['essentials']['alertTargetIDs']) >= 0 is None else ""
                 }
                 create_time = parse_date(payload['data']['essentials']['firedDateTime'])
                 
                 if (hasattr(payload['data'], 'customProperties') and getattr(payload['data'], 'customProperties') is not None):
                     tags = [] if payload['data']['customProperties'] is None else ['{}={}'.format(k, v) for k, v in payload['data']['customProperties'].items()]
-                else:
+                elif ('properties' in context):
                     tags = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
                 
 

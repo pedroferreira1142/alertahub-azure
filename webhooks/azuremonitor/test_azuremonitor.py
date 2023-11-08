@@ -18,6 +18,147 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
 
         custom_webhooks.webhooks['azuremonitor'] = alerta_azuremonitor.AzureMonitorWebhook(
         )
+
+    def test_azure_log_alert_v1_common_budget(self):
+        common_metric_alert = r"""
+        {
+            "schemaId": "azureMonitorCommonAlertSchema",
+            "data": {
+                "essentials": {
+                    "alertId": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.AlertsManagement/alerts/12345678-1234-1234-1234-1234567890ab",
+                    "alertRule": "test-logAlertRule-v1-metricMeasurement",
+                    "severity": "Sev3",
+                    "signalType": "Log",
+                    "monitorCondition": "Fired",
+                    "monitoringService": "Log Analytics",
+                    "alertTargetIDs": [
+                        "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.operationalinsights/workspaces/test-logAnalyticsWorkspace"
+                    ],
+                    "configurationItems": [],
+                    "originAlertId": "12345678-4444-4444-4444-1234567890ab",
+                    "firedDateTime": "2023-11-08T08:21:58.861Z",
+                    "description": "Alert rule description",
+                    "essentialsVersion": "1.0",
+                    "alertContextVersion": "1.1"
+                },
+                "alertContext": {
+                    "SearchQuery": "Heartbeat | summarize AggregatedValue=count() by bin(TimeGenerated, 5m)",
+                    "SearchIntervalStartTimeUtc": "2023-11-08T08:21:58.861Z",
+                    "SearchIntervalEndtimeUtc": "2023-11-08T08:21:58.861Z",
+                    "ResultCount": 2,
+                    "LinkToSearchResults": "https://portal.azure.com@aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/blade/Microsoft_Azure_Monitoring_Logs/LogsBlade/source/Alerts.EmailLinks/scope/%7B%22resources%22%3A%5B%7B%22resourceId%22%3A%22%2Fsubscriptions%2F11111111-1111-1111-1111-111111111111%2FresourceGroups%2Ftest-RG%2Fproviders%2FMicrosoft.OperationalInsights%2Fworkspaces%2Ftest-logAnalyticsWorkspace%22%7D%5D%7D/q/aBcDeFgHi%2BWqUSguzc1NLMqsSlVwTE8vSk1PLElNCUvMKU21Tc4vzSvRaBcDeFgHiaBcDeFgHiaBcDeFgHiaBcDeFgHi/prettify/1/timespan/2021-11-15T15%3a16%3a49.0000000Z%2f2021-11-16T15%3a16%3a49.0000000Z",
+                    "LinkToFilteredSearchResultsUI": "https://portal.azure.com@aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/blade/Microsoft_Azure_Monitoring_Logs/LogsBlade/source/Alerts.EmailLinks/scope/%7B%22resources%22%3A%5B%7B%22resourceId%22%3A%22%2Fsubscriptions%2F11111111-1111-1111-1111-111111111111%2FresourceGroups%2Ftest-RG%2Fproviders%2FMicrosoft.OperationalInsights%2Fworkspaces%2Ftest-logAnalyticsWorkspace%22%7D%5D%7D/q/aBcDeFgHiaBcDeFgHiaBcDeFgHiaBcDeFgHiaBcDeFgHidp%2BOPOhDKsHR%2FFeJXsTgzGJRmVui3KF3RpLyEJCX9A2iMl6jgxMn6jRevng3JmIHLdYtKP4DRI9mhc%3D/prettify/1/timespan/2021-11-15T15%3a16%3a49.0000000Z%2f2021-11-16T15%3a16%3a49.0000000Z",
+                    "LinkToSearchResultsAPI": "https://api.loganalytics.io/v1/workspaces/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/queryquery=Heartbeat%20%0A%7C%20summarize%20AggregatedValue%3Dcount%28%29%20by%20bin%28TimeGenerated%2C%205m%29&timespan=2021-11-15T15%3a16%3a49.0000000Z%2f2021-11-16T15%3a16%3a49.0000000Z",
+                    "LinkToFilteredSearchResultsAPI": "https://api.loganalytics.io/v1/workspaces/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/queryquery=Heartbeat%20%0A%7C%20summarize%20AggregatedValue%3Dcount%28%29%20by%20bin%28TimeGenerated%2C%205m%29%7C%20where%20todouble%28AggregatedValue%29%20%3E%200&timespan=2021-11-15T15%3a16%3a49.0000000Z%2f2021-11-16T15%3a16%3a49.0000000Z",
+                    "SeverityDescription": "Informational",
+                    "WorkspaceId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                    "SearchIntervalDurationMin": "1440",
+                    "AffectedConfigurationItems": [],
+                    "AlertType": "Metric measurement",
+                    "IncludeSearchResults": true,
+                    "Dimensions": [],
+                    "SearchIntervalInMinutes": "1440",
+                    "SearchResults": {
+                        "tables": [
+                            {
+                                "name": "PrimaryResult",
+                                "columns": [
+                                    {
+                                        "name": "TimeGenerated",
+                                        "type": "datetime"
+                                    },
+                                    {
+                                        "name": "AggregatedValue",
+                                        "type": "long"
+                                    }
+                                ],
+                                "rows": [
+                                    [
+                                        "2023-11-08T08:21:58.861Z",
+                                        11
+                                    ],
+                                    [
+                                        "2023-11-08T08:21:58.861Z",
+                                        11
+                                    ]
+                                ]
+                            }
+                        ],
+                        "dataSources": [
+                            {
+                                "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.operationalinsights/workspaces/test-logAnalyticsWorkspace",
+                                "region": "eastus",
+                                "tables": [
+                                    "Heartbeat"
+                                ]
+                            }
+                        ]
+                    },
+                    "Threshold": 0,
+                    "Operator": "Greater Than",
+                    "IncludedSearchResults": "True"
+                }
+            }
+        }
+        """
+
+        response = self.client.post(
+            '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+        self.assertEqual(response.status_code, 201, response.data)
+        data = json.loads(response.data.decode('utf-8'))
+        # print(json.dumps(data, indent=4))
+        self.assertEqual(data['alert']['resource'], 'test-logAnalyticsWorkspace')
+
+    def test_azure_common_budget(self):
+        common_metric_alert = r"""
+        {
+            "schemaId": "azureMonitorCommonAlertSchema",
+            "data": {
+                "essentials": {
+                    "monitoringService": "CostAlerts",
+                    "firedDateTime": "2023-11-08T08:13:18.509Z",
+                    "description": "Your spend for budget Test_actual_cost_budget is now $11,111.00 exceeding your specified threshold $25.00.",
+                    "essentialsVersion": "1.0",
+                    "alertContextVersion": "1.0",
+                    "alertId": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.CostManagement/alerts/Test_Alert",
+                    "alertRule": null,
+                    "severity": null,
+                    "signalType": null,
+                    "monitorCondition": null,
+                    "alertTargetIDs": null,
+                    "configurationItems": [
+                        "budgets"
+                    ],
+                    "originAlertId": null
+                },
+                "alertContext": {
+                    "AlertCategory": "budgets",
+                    "AlertData": {
+                        "Scope": "/subscriptions/11111111-1111-1111-1111-111111111111/",
+                        "ThresholdType": "Actual",
+                        "BudgetType": "Cost",
+                        "BudgetThreshold": "$50.00",
+                        "NotificationThresholdAmount": "$25.00",
+                        "BudgetName": "Test_actual_cost_budget",
+                        "BudgetId": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Consumption/budgets/Test_actual_cost_budget",
+                        "BudgetStartDate": "2022-11-01",
+                        "BudgetCreator": "test@sample.test",
+                        "Unit": "USD",
+                        "SpentAmount": "$11,111.00"
+                    }
+                }
+            }
+        }
+
+        """
+
+        response = self.client.post(
+            '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+        self.assertEqual(response.status_code, 201, response.data)
+        data = json.loads(response.data.decode('utf-8'))
+        # print(json.dumps(data, indent=4))
+        self.assertEqual(data['alert']['resource'], 'budgets')
+
     def test_azure_monitor_common(self):
         
         common_metric_alert = r"""
