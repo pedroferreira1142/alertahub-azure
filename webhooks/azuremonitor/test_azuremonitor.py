@@ -18,8 +18,87 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
 
         custom_webhooks.webhooks['azuremonitor'] = alerta_azuremonitor.AzureMonitorWebhook(
         )
+    
+    def test_azure_service_health_common(self):
+        common_metric_alert = r"""
+        {
+            "schemaId": "azureMonitorCommonAlertSchema",
+            "data": {
+                "essentials": {
+                    "alertId": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.AlertsManagement/alerts/1234abcd5678efgh1234abcd5678efgh1234abcd5678efgh1234abcd5678efgh",
+                    "alertRule": "test-ServiceHealthAlertRule",
+                    "severity": "Sev4",
+                    "signalType": "Activity Log",
+                    "monitorCondition": "Fired",
+                    "monitoringService": "ServiceHealth",
+                    "alertTargetIDs": [
+                        "/subscriptions/11111111-1111-1111-1111-111111111111"
+                    ],
+                    "originAlertId": "12345678-1234-1234-1234-1234567890ab",
+                    "firedDateTime": "2023-11-08T09:04:23.598Z",
+                    "description": "Alert rule description",
+                    "essentialsVersion": "1.0",
+                    "alertContextVersion": "1.0"
+                },
+                "alertContext": {
+                    "authorization": null,
+                    "channels": 1,
+                    "claims": null,
+                    "caller": null,
+                    "correlationId": "12345678-abcd-efgh-ijkl-abcd12345678",
+                    "eventSource": 2,
+                    "eventTimestamp": "2023-11-08T09:04:23.598Z",
+                    "httpRequest": null,
+                    "eventDataId": "12345678-1234-1234-1234-1234567890ab",
+                    "level": 3,
+                    "operationName": "Microsoft.ServiceHealth/incident/action",
+                    "operationId": "12345678-abcd-efgh-ijkl-abcd12345678",
+                    "properties": {
+                        "title": "Test Action Group - Test Service Health Alert",
+                        "service": "Azure Service Name",
+                        "region": "Global",
+                        "communication": "<p>This is a test from Service Health Alert</p>",
+                        "incidentType": "Incident",
+                        "trackingId": "TEST-TTT",
+                        "impactStartTime": "2023-11-08T09:04:23.598Z",
+                        "impactMitigationTime": "2023-11-08T09:04:23.598Z",
+                        "impactedServices": [
+                            {
+                                "ImpactedRegions": [
+                                    {
+                                        "RegionName": "Global"
+                                    }
+                                ],
+                                "ServiceName": "Azure Service Name"
+                            }
+                        ],
+                        "impactedServicesTableRows": "<tr><td>This is a test from service health alert</td></tr>",
+                        "defaultLanguageTitle": "Test Action Group - Test Service Health Alert",
+                        "defaultLanguageContent": "<p>This is a test from Service Health Alert</p>",
+                        "stage": "Resolved",
+                        "communicationId": "11223344556677",
+                        "isHIR": "false",
+                        "IsSynthetic": "True",
+                        "impactType": "SubscriptionList",
+                        "version": "0.1.1"
+                    },
+                    "status": "Resolved",
+                    "subStatus": null,
+                    "submissionTimestamp": "2023-11-08T09:04:23.598Z",
+                    "ResourceType": null
+                }
+            }
+        }
+        """
 
-    def test_azure_log_alert_v1_common_budget(self):
+        response = self.client.post(
+            '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+        self.assertEqual(response.status_code, 201, response.data)
+        data = json.loads(response.data.decode('utf-8'))
+        print(json.dumps(data, indent=4))
+        self.assertEqual(data['alert']['resource'], 'Azure Service Name')
+
+    def test_azure_log_alert_v1_common(self):
         common_metric_alert = r"""
         {
             "schemaId": "azureMonitorCommonAlertSchema",

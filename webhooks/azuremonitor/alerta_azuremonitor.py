@@ -48,7 +48,14 @@ class AzureMonitorWebhook(WebhookBase):
 
                 group = payload['data']['essentials']['signalType']
                 service = [payload['data']['essentials']['monitoringService']]
-                resource = payload['data']['essentials']['alertTargetIDs'][0].split("/")[-1] if len(payload['data']['essentials']['configurationItems']) == 0 else payload['data']['essentials']['configurationItems'][0]
+                if 'configurationItems' in payload['data']['essentials'] and len(payload['data']['essentials']['configurationItems']) > 0:
+                    resource = payload['data']['essentials']['configurationItems'][0]
+                elif ('configurationItems' in payload['data']['essentials'] and len(payload['data']['essentials']['configurationItems']) == 0):
+                    resource = payload['data']['essentials']['alertTargetIDs'][0].split("/")[-1]
+                elif ('properties' in context and 'service' in context['properties']):
+                    resource = context['properties']['service']
+
+                # resource = payload['data']['essentials']['alertTargetIDs'][0].split("/")[-1] if 'configurationItems' not in payload['data']['essentials'] or len(payload['data']['essentials']['configurationItems']) == 0 else 
                 event_type = payload['data']['essentials']['signalType']
 
                 pattern = r'/subscriptions/[0-9a-fA-F-]+'
