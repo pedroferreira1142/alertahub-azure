@@ -5,6 +5,9 @@ from alerta.webhooks import WebhookBase
 from dateutil.parser import parse as parse_date
 import re
 
+from ActivityLog import ActivityLog
+
+
 SEVERITY_MAP = {
     '0': 'critical',       # Critical
     '1': 'major',          # Error
@@ -21,8 +24,16 @@ SEVERITY_MAP_COMMON = {
     'Sev4': 'debug'           # Verbose
 }
 
+SEVERITY_MAP_ACTIVITY_LOG = {
+    'Critical': 'critical',       # Critical
+    'Error': 'error',          # Error
+    'Warning': 'warning',        # Warning
+    'Informational': 'informational',  # Informational
+}
+
 DEFAULT_SEVERITY_LEVEL = '3'  # 'warning'
 DEFAULT_SEVERITY_LEVEL_COMMON = 'Sev2'  # 'warning'
+DEFAULT_SEVERITY_LEVEL_ACTIVITY_LOG = 'Warning'  # 'warning'
 
 
 class AzureMonitorWebhook(WebhookBase):
@@ -91,6 +102,29 @@ class AzureMonitorWebhook(WebhookBase):
                 else:
                     text = payload['data']['essentials']['description']
 
+            # ================================ Microsoft.Insights/activityLogs
+            elif payload['schemaId'] == 'Microsoft.Insights/activityLogs':
+                environment='Production'
+                event_type = "Activity Logs"
+                aLog = ActivityLog(payload)
+
+                attributes = aLog.extractAttributes()
+                resource=aLog.activityLog.authorization.scope.split("/")[-1]
+                event=aLog.activityLog.operationName
+
+                if aLog.status == 'Resolved' or aLog.status == 'Deactivated':
+                    severity = 'ok'
+                else:
+                    severity = SEVERITY_MAP_ACTIVITY_LOG[aLog.activityLog.level]
+
+                service=[aLog.resourceType]
+                group=aLog.resourceGroupName
+                value=aLog.status
+                text=aLog.activityLog.description
+                tags=[]
+
+                create_time=aLog.submissionTimestamp
+
             else:
                 context = payload['data']['context']
 
@@ -98,8 +132,7 @@ class AzureMonitorWebhook(WebhookBase):
                 if status == 'Resolved' or status == 'Deactivated':
                     severity = 'ok'
                 else:
-                    severity = SEVERITY_MAP[context.get(
-                        'severity', DEFAULT_SEVERITY_LEVEL)]
+                    severity = SEVERITY_MAP[context.get('severity', DEFAULT_SEVERITY_LEVEL)]
 
                 resource = context['resourceName']
                 event = context['name']
@@ -110,6 +143,7 @@ class AzureMonitorWebhook(WebhookBase):
                                                                         payload['data']['properties'].items()]
                 create_time = parse_date(context['timestamp'])
 
+            # ======================================= AzureMonitorMetricAlert
             if payload['schemaId'] == 'AzureMonitorMetricAlert':
                 event_type = 'MetricAlert'
                 text = '{}: {} {} ({} {})'.format(
@@ -126,7 +160,7 @@ class AzureMonitorWebhook(WebhookBase):
                 value = ''
                 event_type = 'EventAlert'
 
-        # Alerts (classic)
+            
         else:
             context = payload['context']
 
