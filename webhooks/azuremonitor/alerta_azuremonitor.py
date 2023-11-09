@@ -5,7 +5,7 @@ from alerta.webhooks import WebhookBase
 from dateutil.parser import parse as parse_date
 import re
 
-from ActivityLog import ActivityLog
+from webhooks.azuremonitor.ActivityLog import ActivityLog
 
 
 SEVERITY_MAP = {
