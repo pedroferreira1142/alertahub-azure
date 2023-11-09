@@ -22,45 +22,45 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
     def testActivityLog(self):
         common_metric_alert = r"""
         {
-            "schemaId": "Microsoft.Insights/activityLogs",
-            "data": {
-                "status": "Activated",
-                "context": {
-                    "activityLog": {
-                        "authorization": {
-                            "action": "Microsoft.Compute/virtualMachines/restart/action",
-                            "scope": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM"
+            "schemaId":"Microsoft.Insights/activityLogs",
+            "data":{
+                "status":"Activated",
+                "context":{
+                    "activityLog":{
+                        "authorization":{
+                            "action":"Microsoft.Compute/virtualMachines/restart/action",
+                            "scope":"/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM"
                         },
-                        "channels": "Operation",
-                        "claims": "{}",
-                        "caller": "user-email@domain.com",
-                        "correlationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-                        "description": "",
-                        "eventSource": "Administrative",
-                        "eventTimestamp": "2023-11-08T16:15:49.14Z",
-                        "eventDataId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-                        "level": "Informational",
-                        "operationName": "Microsoft.Compute/virtualMachines/restart/action",
-                        "operationId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
-                        "properties": {
-                            "eventCategory": "Administrative",
-                            "entity": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
-                            "message": "Microsoft.Compute/virtualMachines/restart/action",
-                            "hierarchy": "22222222-2222-2222-2222-222222222222/CnAIOrchestrationServicePublicCorpprod/33333333-3333-3333-3333-3333333303333/44444444-4444-4444-4444-444444444444/55555555-5555-5555-5555-555555555555/11111111-1111-1111-1111-111111111111"
-                        }
-                    },
-                    "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
-                    "resourceGroupName": "test-RG",
-                    "resourceProviderName": "Microsoft.Compute",
-                    "status": "Succeeded",
-                    "subStatus": "",
-                    "subscriptionId": "11111111-1111-1111-1111-111111111111",
-                    "submissionTimestamp": "2023-11-08T16:15:49.14Z",
-                    "resourceType": "Microsoft.Compute/virtualMachines"
+                        "channels":"Operation",
+                        "claims":"{}",
+                        "caller":"user-email@domain.com",
+                        "correlationId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                        "description":"",
+                        "eventSource":"Administrative",
+                        "eventTimestamp":"2023-11-09T09:15:10.961Z",
+                        "eventDataId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                        "level":"Informational",
+                        "operationName":"Microsoft.Compute/virtualMachines/restart/action",
+                        "operationId":"cccccccc-cccc-cccc-cccc-cccccccccccc",
+                        "properties":{
+                            "eventCategory":"Administrative",
+                            "entity":"/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
+                            "message":"Microsoft.Compute/virtualMachines/restart/action",
+                            "hierarchy":"22222222-2222-2222-2222-222222222222/CnAIOrchestrationServicePublicCorpprod/33333333-3333-3333-3333-3333333303333/44444444-4444-4444-4444-444444444444/55555555-5555-5555-5555-555555555555/11111111-1111-1111-1111-111111111111"
+                        },
+                        "resourceId":"/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
+                        "resourceGroupName":"test-RG",
+                        "resourceProviderName":"Microsoft.Compute",
+                        "status":"Succeeded",
+                        "subStatus":"",
+                        "subscriptionId":"11111111-1111-1111-1111-111111111111",
+                        "submissionTimestamp":"2023-11-09T09:15:10.961Z",
+                        "resourceType":"Microsoft.Compute/virtualMachines"
+                    }
                 },
-                "properties": {
-                    "customKey1": "value1",
-                    "customKey2": "value2"
+                "properties":{
+                    "customKey1":"value1",
+                    "customKey2":"value2"
                 }
             }
         }

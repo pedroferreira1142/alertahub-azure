@@ -122,7 +122,7 @@ class AzureMonitorWebhook(WebhookBase):
                 text=aLog.activityLog.description
                 tags=[]
 
-                create_time=aLog.submissionTimestamp
+                create_time=aLog.activityLog.submissionTimestamp
 
             else:
                 context = payload['data']['context']
@@ -247,6 +247,7 @@ class ActivityLog:
             self.operationName = activity_log_data.get("operationName")
             self.operationId = activity_log_data.get("operationId")
             self.properties = ActivityLog.Properties(activity_log_data.get("properties", {}))
+            self.submissionTimestamp = parse_date(activity_log_data.get("submissionTimestamp"))
 
     def __init__(self, data):
         self.schemaId = data.get("schemaId")
@@ -260,7 +261,6 @@ class ActivityLog:
         self.status = context_data.get("status")
         self.subStatus = context_data.get("subStatus")
         self.subscriptionId = context_data.get("subscriptionId")
-        self.submissionTimestamp = parse_date(context_data.get("submissionTimestamp"))
         self.resourceType = context_data.get("resourceType")
         self.properties = data.get("data", {}).get("properties")
 
