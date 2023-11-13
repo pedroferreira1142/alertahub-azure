@@ -174,6 +174,28 @@ class AzureMonitorWebhook(WebhookBase):
                 value = cAlert.spendingAmount
                 create_time=cAlert.budgetStartDate
 
+            # ================================ LogAlertV2
+            elif payload['schemaId'] == 'Microsoft.Insights/LogAlert' and 'data' in payload and 'data' in payload['data'] and 'essentials' in payload['data']['data']:
+                lAlertV2 = LogAlertV2(payload)
+
+                environment='Production'
+                event_type = "Log Alert"
+
+                if lAlertV2.monitorCondition == 'Resolved' or lAlertV2.monitorCondition == 'Deactivated':
+                    severity = 'ok'
+                else:
+                    severity = SEVERITY_MAP_COMMON[lAlertV2.severity]
+
+                resource= lAlertV2.extractResourceName()
+                event=lAlertV2.alertRule
+                attributes = lAlertV2.extractSubscriptionId()
+                service = [lAlertV2.monitoringService]
+                group=lAlertV2.signalType
+                tags= []
+                text = lAlertV2.description
+                value = lAlertV2.description
+                create_time=lAlertV2.firedDateTime
+
             # ================================ LogAlertV1
             elif payload['schemaId'] == 'Microsoft.Insights/LogAlert':
                 lAlert = LogAlertV1(payload)
@@ -181,7 +203,12 @@ class AzureMonitorWebhook(WebhookBase):
 
                 environment='Production'
                 event_type = "Log Alert"
-                severity = SEVERITY_MAP[lAlert.severity]
+
+                if lAlert.severity in SEVERITY_MAP:
+                    severity = SEVERITY_MAP[lAlert.severity]
+                else:
+                    severity = SEVERITY_MAP_COMMON[lAlert.severity]  
+
                 resource=resourceName
                 event=lAlert.schemaId
                 attributes = lAlert.extractAttributes()
@@ -196,6 +223,7 @@ class AzureMonitorWebhook(WebhookBase):
                     lAlert.description)
                 value = lAlert.searchQuery
                 create_time=lAlert.searchIntervalStartTimeUtc
+
             else:
                 context = payload['data']['context']
 
@@ -497,6 +525,59 @@ class LogAlertV1:
             resourceName = self.resourceId.split('/')[-1]
 
             return resourceGroup, resourceName
+        
+    def parse_date(self, date_str):
+        if date_str:
+            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return None
+    
+class LogAlertV2:
+    def __init__(self, data):
+        payload = data.get('data', {})
+        self.schemaId = payload.get('schemaId', "Microsoft.Insights/LogAlert")
+        self.alertId = payload.get('data', {}).get('essentials', {}).get('alertId')
+        self.alertRule = payload.get('data', {}).get('essentials', {}).get('alertRule')
+        self.severity = payload.get('data', {}).get('essentials', {}).get('severity')
+        self.signalType = payload.get('data', {}).get('essentials', {}).get('signalType')
+        self.monitorCondition = payload.get('data', {}).get('essentials', {}).get('monitorCondition')
+        self.monitoringService = payload.get('data', {}).get('essentials', {}).get('monitoringService')
+        self.alertTargetIDs = payload.get('data', {}).get('essentials', {}).get('alertTargetIDs', [])
+        self.configurationItems = payload.get('data', {}).get('essentials', {}).get('configurationItems', [])
+        self.originAlertId = payload.get('data', {}).get('essentials', {}).get('originAlertId')
+        self.firedDateTime = self.parse_date(payload.get('data', {}).get('essentials', {}).get('firedDateTime'))
+        self.description = payload.get('data', {}).get('essentials', {}).get('description')
+        self.essentialsVersion = payload.get('data', {}).get('essentials', {}).get('essentialsVersion')
+        self.alertContextVersion = payload.get('data', {}).get('essentials', {}).get('alertContextVersion')
+
+        self.customProperties = payload.get('data', {}).get('alertContext', {}).get('properties', {})
+        self.conditionType = payload.get('data', {}).get('alertContext', {}).get('conditionType')
+        self.windowSize = payload.get('data', {}).get('alertContext', {}).get('condition', {}).get('windowSize')
+        self.allOfConditions = payload.get('data', {}).get('alertContext', {}).get('condition', {}).get('allOf', [])
+        self.windowStartTime = payload.get('data', {}).get('alertContext', {}).get('condition', {}).get('windowStartTime')
+        self.windowEndTime = payload.get('data', {}).get('alertContext', {}).get('condition', {}).get('windowEndTime')
+
+    def extractResourceName(self):
+        if (len(self.configurationItems) > 0):
+            return self.configurationItems[0]
+        elif (len(self.configurationItems)== 0):
+            return self.alertTargetIDs[0].split("/")[-1]
+        
+    def extractSubscriptionId(self):
+        attributes = {}
+        pattern = r'/subscriptions/[0-9a-fA-F-]+'
+        attributes.update({
+            "subscriptionId": re.sub(pattern, '', self.alertTargetIDs[0]) 
+                if self.alertTargetIDs and len(self.alertTargetIDs) >= 0 
+                else ""
+        })
+
+        return attributes
+    
+    def extractValue(self):
+        if (len(self.allOfConditions) > 0):
+            return '{} {}'.format(self.allOfConditions[0]['metricValue'], self.allOfConditions[0]['metricName'])
+        else:
+            return self.description
         
     def parse_date(self, date_str):
         if date_str:
