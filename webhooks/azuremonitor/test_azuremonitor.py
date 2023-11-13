@@ -18,48 +18,28 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
 
         custom_webhooks.webhooks['azuremonitor'] = alerta_azuremonitor.AzureMonitorWebhook(
         )
-    
     def testAvailabilityAlert(self):
         common_metric_alert = r"""
         {
-            "schemaId": "AzureMonitorMetricAlert",
+            "schemaId": "AIP Budget Notification",
             "data": {
-                "data": {
-                    "version": "2.0",
-                    "properties": {
-                        "customKey1": "value1",
-                        "customKey2": "value2"
-                    },
-                    "status": "Activated",
-                    "context": {
-                        "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.insights/metricalerts/test-availabilityTest-test-applicationInsights",
-                        "name": "test-availabilityTest-test-applicationInsights",
-                        "description": "Alert rule description",
-                        "conditionType": "WebtestLocationAvailabilityCriteria",
-                        "severity": "1",
-                        "condition": {
-                            "windowSize": "PT5M",
-                            "allOf": [
-                                {
-                                    "metricName": "Failed Location",
-                                    "metricNamespace": null,
-                                    "operator": "GreaterThan",
-                                    "threshold": "2",
-                                    "timeAggregation": "Sum",
-                                    "dimensions": [],
-                                    "metricValue": 5.0,
-                                    "webTestName": "test-availabilityTest-test-applicationInsights"
-                                }
-                            ]
-                        },
-                        "subscriptionId": "11111111-1111-1111-1111-111111111111",
-                        "resourceGroupName": "test-RG",
-                        "resourceName": "test-availabilityTest-test-applicationInsights",
-                        "resourceType": "microsoft.insights/webtests",
-                        "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.insights/webtests/test-availabilityTest-test-applicationInsights",
-                        "portalLink": "https://portal.azure.com/resource/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.insights/webtests/test-availabilityTest-test-applicationInsights"
-                    }
-                }
+                "SubscriptionName": "test-subscription",
+                "SubscriptionId": "11111111-1111-1111-1111-111111111111",
+                "EnrollmentNumber": "",
+                "DepartmentName": "test-budgetDepartmentName",
+                "AccountName": "test-budgetAccountName",
+                "BillingAccountId": "",
+                "BillingProfileId": "",
+                "InvoiceSectionId": "",
+                "ResourceGroup": "test-RG",
+                "SpendingAmount": "1111.32",
+                "BudgetStartDate": "2023-11-13T10:52:20.381Z",
+                "Budget": "10000",
+                "Unit": "USD",
+                "BudgetCreator": "email@domain.com",
+                "BudgetName": "test-budgetName",
+                "BudgetType": "Cost",
+                "NotificationThresholdAmount": "8000.0"
             }
         }
         """
@@ -69,7 +49,59 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 201, response.data)
         data = json.loads(response.data.decode('utf-8'))
         print(json.dumps(data, indent=4))
-        self.assertEqual(data['alert']['resource'], 'test-availabilityTest-test-applicationInsights')
+        self.assertEqual(data['alert']['resource'], 'test-budgetName')
+    
+    # def testAvailabilityAlert(self):
+    #     common_metric_alert = r"""
+    #     {
+    #         "schemaId": "AzureMonitorMetricAlert",
+    #         "data": {
+    #             "data": {
+    #                 "version": "2.0",
+    #                 "properties": {
+    #                     "customKey1": "value1",
+    #                     "customKey2": "value2"
+    #                 },
+    #                 "status": "Activated",
+    #                 "context": {
+    #                     "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.insights/metricalerts/test-availabilityTest-test-applicationInsights",
+    #                     "name": "test-availabilityTest-test-applicationInsights",
+    #                     "description": "Alert rule description",
+    #                     "conditionType": "WebtestLocationAvailabilityCriteria",
+    #                     "severity": "1",
+    #                     "condition": {
+    #                         "windowSize": "PT5M",
+    #                         "allOf": [
+    #                             {
+    #                                 "metricName": "Failed Location",
+    #                                 "metricNamespace": null,
+    #                                 "operator": "GreaterThan",
+    #                                 "threshold": "2",
+    #                                 "timeAggregation": "Sum",
+    #                                 "dimensions": [],
+    #                                 "metricValue": 5.0,
+    #                                 "webTestName": "test-availabilityTest-test-applicationInsights"
+    #                             }
+    #                         ]
+    #                     },
+    #                     "subscriptionId": "11111111-1111-1111-1111-111111111111",
+    #                     "resourceGroupName": "test-RG",
+    #                     "resourceName": "test-availabilityTest-test-applicationInsights",
+    #                     "resourceType": "microsoft.insights/webtests",
+    #                     "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.insights/webtests/test-availabilityTest-test-applicationInsights",
+    #                     "portalLink": "https://portal.azure.com/resource/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.insights/webtests/test-availabilityTest-test-applicationInsights"
+    #                 }
+    #             }
+    #         }
+    #     }
+    #     """
+
+    #     response = self.client.post(
+    #         '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+    #     self.assertEqual(response.status_code, 201, response.data)
+    #     data = json.loads(response.data.decode('utf-8'))
+    #     print(json.dumps(data, indent=4))
+    #     self.assertEqual(data['alert']['resource'], 'test-availabilityTest-test-applicationInsights')
 
     # def testActivityLog(self):
     #     common_metric_alert = r"""

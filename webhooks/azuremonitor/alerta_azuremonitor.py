@@ -152,6 +152,28 @@ class AzureMonitorWebhook(WebhookBase):
                     aAlert.allOf[0]['metricName'])
                 create_time=aAlert.createTime
 
+            # ================================ Availibilty Alert
+            elif payload['schemaId'] == 'AIP Budget Notification':
+                environment='Production'
+                event_type = "Cost Budget Alert"
+                cAlert = CostBudgetAlert(payload)
+
+                severity = SEVERITY_MAP['3']
+                resource=cAlert.budgetName
+                event=cAlert.schemaId
+                attributes = cAlert.extractAttributes()
+                service = [cAlert.subscriptionName]
+                group=cAlert.resourceGroup
+                tags= []
+                text = '{}: {} {} ({} {})'.format(
+                    severity.upper(),
+                    cAlert.budgetName,
+                    cAlert.budgetType,
+                    cAlert.notificationThresholdAmount,
+                    cAlert.budget)
+                value = cAlert.spendingAmount
+                create_time=cAlert.budgetStartDate
+
             else:
                 context = payload['data']['context']
 
@@ -350,6 +372,42 @@ class AvailibiltyAlert:
             properties_keys = self.properties.keys()
             for key in properties_keys:
                 attributes[key] = self.properties[key]
+
+        if self.subscriptionId:
+            attributes.update({"subscriptionId": self.subscriptionId})
+
+        return attributes
+    
+
+class CostBudgetAlert:
+    def __init__(self, payload):
+        self.schemaId = payload.get("schemaId")
+        self.data = payload.get("data", {})
+        self.subscriptionName = self.data.get("SubscriptionName")
+        self.subscriptionId = self.data.get("SubscriptionId")
+        self.enrollmentNumber = self.data.get("EnrollmentNumber")
+        self.departmentName = self.data.get("DepartmentName")
+        self.accountName = self.data.get("AccountName")
+        self.billingAccountId = self.data.get("BillingAccountId")
+        self.billingProfileId = self.data.get("BillingProfileId")
+        self.invoiceSectionId = self.data.get("InvoiceSectionId")
+        self.resourceGroup = self.data.get("ResourceGroup")
+        self.spendingAmount = float(self.data.get("SpendingAmount", 0.0))
+        self.budgetStartDate = self.parse_date(self.data.get("BudgetStartDate"))
+        self.budget = float(self.data.get("Budget", 0.0))
+        self.unit = self.data.get("Unit")
+        self.budgetCreator = self.data.get("BudgetCreator")
+        self.budgetName = self.data.get("BudgetName")
+        self.budgetType = self.data.get("BudgetType")
+        self.notificationThresholdAmount = float(self.data.get("NotificationThresholdAmount", 0.0))
+
+    def parse_date(self, date_str):
+        if date_str:
+            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return None
+    
+    def extractAttributes(self):
+        attributes = {}
 
         if self.subscriptionId:
             attributes.update({"subscriptionId": self.subscriptionId})
