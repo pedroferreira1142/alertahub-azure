@@ -352,6 +352,7 @@ class ActivityLog:
                 self.submissionTimestamp = parse_date(activity_log_data.get("submissionTimestamp"))
             self.subscriptionId = activity_log_data.get("subscriptionId")
             self.resourceId = activity_log_data.get("resourceId")
+            self.resourceType = activity_log_data.get("resourceType")
 
         
 
@@ -359,13 +360,11 @@ class ActivityLog:
         self.schemaId = data.get("schemaId")
         self.status = data.get("data", {}).get("status")
         context_data = data.get("data", {}).get("context", {})
-
         self.activityLog = ActivityLog.ActivityLogDetails(context_data.get("activityLog", {}))
         self.resourceGroupName = context_data.get("resourceGroupName")
         self.resourceProviderName = context_data.get("resourceProviderName")
         self.status = context_data.get("status")
         self.subStatus = context_data.get("subStatus")
-        self.resourceType = context_data.get("resourceType")
         self.properties = data.get("data", {}).get("properties")
 
     def extractAttributes(self):
