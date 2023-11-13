@@ -4,7 +4,7 @@ from alerta.models.alert import Alert
 from alerta.webhooks import WebhookBase
 from dateutil.parser import parse as parse_date
 import re
-
+from datetime import datetime
 
 
 SEVERITY_MAP = {
@@ -124,6 +124,34 @@ class AzureMonitorWebhook(WebhookBase):
 
                 create_time=aLog.activityLog.submissionTimestamp
 
+            # ================================ Availibilty Alert
+            elif payload['schemaId'] == 'AzureMonitorMetricAlert':
+                environment='Production'
+                event_type = "Availibilty Alert"
+                aAlert = AvailibiltyAlert(payload)
+            
+                if aAlert.status == 'Resolved' or aAlert.status == 'Deactivated':
+                    severity = 'ok'
+                else:
+                    severity = SEVERITY_MAP[aAlert.severity]
+
+                resource=aAlert.resourceName
+                event=aAlert.resourceType
+                attributes = aAlert.extractAttributes()
+                service = [aAlert.resourceType]
+                group=aAlert.resourceGroupName
+                tags= []
+                text = '{}: {} {} ({} {})'.format(
+                    severity.upper(),
+                    aAlert.allOf[0]['metricValue'],
+                    aAlert.allOf[0]['metricName'],
+                    aAlert.allOf[0]['operator'],
+                    aAlert.allOf[0]['threshold'])
+                value = '{} {}'.format(
+                    aAlert.allOf[0]['metricValue'],
+                    aAlert.allOf[0]['metricName'])
+                create_time=aAlert.createTime
+
             else:
                 context = payload['data']['context']
 
@@ -143,7 +171,7 @@ class AzureMonitorWebhook(WebhookBase):
                 create_time = parse_date(context['timestamp'])
 
             # ======================================= AzureMonitorMetricAlert
-            if payload['schemaId'] == 'AzureMonitorMetricAlert':
+            if payload['schemaId'] == 'AzureMonitorMetricAlert'and event_type != "Availibilty Alert":
                 event_type = 'MetricAlert'
                 text = '{}: {} {} ({} {})'.format(
                     severity.upper(),
@@ -248,6 +276,7 @@ class ActivityLog:
             self.operationId = activity_log_data.get("operationId")
             self.properties = activity_log_data.get("properties", {})
             self.submissionTimestamp = parse_date(activity_log_data.get("submissionTimestamp"))
+            self.subscriptionId = activity_log_data.get("subscriptionId")
 
     def __init__(self, data):
         self.schemaId = data.get("schemaId")
@@ -260,7 +289,7 @@ class ActivityLog:
         self.resourceProviderName = context_data.get("resourceProviderName")
         self.status = context_data.get("status")
         self.subStatus = context_data.get("subStatus")
-        self.subscriptionId = context_data.get("subscriptionId")
+        # print(context_data.get("subscriptionId"))
         self.resourceType = context_data.get("resourceType")
         self.properties = data.get("data", {}).get("properties")
 
@@ -277,8 +306,8 @@ class ActivityLog:
             for key in properties_keys:
                 attributes[key] = self.activityLog.properties[key]
 
-        if self.subscriptionId:
-            attributes.update({"subscriptionId": self.subscriptionId})
+        if self.activityLog.subscriptionId:
+            attributes.update({"subscriptionId": self.activityLog.subscriptionId})
 
         return attributes
     
@@ -286,22 +315,43 @@ class ActivityLog:
 
 class AvailibiltyAlert:
     def __init__(self, payload):
-        self.schemaId = payload["data"]["schemaId"]
-        self.version = payload["data"]["version"]
-        self.properties = payload["data"]["properties"]
-        self.status = payload["data"]["status"]
-        self.context = payload["data"]["context"]
+        self.schema_id = payload.get("schemaId")
+        self.data = payload.get("data", {}).get("data", {})
+        self.version = self.data.get("version")
+        self.properties = self.data.get("properties", {})
+        self.status = self.data.get("status")
+        self.context = self.data.get("context", {})
+        
+        # Context attributes
+        self.alertId = self.context.get("id")
+        self.alertName = self.context.get("name")
+        self.description = self.context.get("description")
+        self.condition_type = self.context.get("conditionType")
+        self.severity = self.context.get("severity")
+        self.condition = self.context.get("condition", {})
+        
+        # Condition attributes
+        self.windowSize = self.condition.get("windowSize")
+        self.allOf = self.condition.get("allOf", [])
+        
+        # Additional context attributes
+        self.subscriptionId = self.context.get("subscriptionId")
+        self.resourceGroupName = self.context.get("resourceGroupName")
+        self.resourceName = self.context.get("resourceName")
+        self.resourceType = self.context.get("resourceType")
+        self.resourceId = self.context.get("resourceId")
+        self.portalLink = self.context.get("portalLink")
+        self.createTime = datetime.now()
 
-        self.id = self.context["id"]
-        self.name = self.context["name"]
-        self.description = self.context["description"]
-        self.conditionType = self.context["conditionType"]
-        self.severity = self.context["severity"]
+    def extractAttributes(self):
+        attributes = {}
 
-        self.windowSize = self.context["condition"]["windowSize"]
-        self.metricName = self.context["condition"]["allOf"][0]["metricName"]
-        self.operator = self.context["condition"]["allOf"][0]["operator"]
-        self.threshold = self.context["condition"]["allOf"][0]["threshold"]
-        self.timeAggregation = self.context["condition"]["allOf"][0]["timeAggregation"]
-        self.metricValue = self.context["condition"]["allOf"][0]["metricValue"]
-        self.webTestName = self.context["condition"]["allOf"][0]["webTestName"]
+        if self.properties is not None:
+            properties_keys = self.properties.keys()
+            for key in properties_keys:
+                attributes[key] = self.properties[key]
+
+        if self.subscriptionId:
+            attributes.update({"subscriptionId": self.subscriptionId})
+
+        return attributes
