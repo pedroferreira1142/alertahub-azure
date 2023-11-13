@@ -109,7 +109,7 @@ class AzureMonitorWebhook(WebhookBase):
                 aLog = ActivityLog(payload)
 
                 attributes = aLog.extractAttributes()
-                resource=aLog.activityLog.authorization.scope.split("/")[-1]
+                resource=aLog.activityLog.resourceId.split("/")[-1] if not hasattr(aLog.activityLog, 'authorization') else aLog.activityLog.authorization.scope.split("/")[-1]
                 event=aLog.activityLog.operationName
 
                 if aLog.status == 'Resolved' or aLog.status == 'Deactivated':
@@ -123,7 +123,7 @@ class AzureMonitorWebhook(WebhookBase):
                 text=aLog.activityLog.description
                 tags=[]
 
-                create_time=aLog.activityLog.submissionTimestamp
+                create_time=aLog.activityLog.eventTimestamp
 
             # ================================ Availibilty Alert
             elif payload['schemaId'] == 'AzureMonitorMetricAlert' and "data" in payload and "data" in payload['data'] and "availability" in payload['data']['data']['context']['id']:
@@ -334,7 +334,8 @@ class ActivityLog:
 
     class ActivityLogDetails:
         def __init__(self, activity_log_data):
-            self.authorization = ActivityLog.Authorization(activity_log_data.get("authorization", {}))
+            if ("authorization" in activity_log_data):
+                self.authorization = ActivityLog.Authorization(activity_log_data.get("authorization", None))
             self.channels = activity_log_data.get("channels")
             self.claims = activity_log_data.get("claims")
             self.caller = activity_log_data.get("caller")
@@ -347,8 +348,12 @@ class ActivityLog:
             self.operationName = activity_log_data.get("operationName")
             self.operationId = activity_log_data.get("operationId")
             self.properties = activity_log_data.get("properties", {})
-            self.submissionTimestamp = parse_date(activity_log_data.get("submissionTimestamp"))
+            if ("submissionTimestamp" in activity_log_data):
+                self.submissionTimestamp = parse_date(activity_log_data.get("submissionTimestamp"))
             self.subscriptionId = activity_log_data.get("subscriptionId")
+            self.resourceId = activity_log_data.get("resourceId")
+
+        
 
     def __init__(self, data):
         self.schemaId = data.get("schemaId")
@@ -356,12 +361,10 @@ class ActivityLog:
         context_data = data.get("data", {}).get("context", {})
 
         self.activityLog = ActivityLog.ActivityLogDetails(context_data.get("activityLog", {}))
-        self.resourceId = context_data.get("resourceId")
         self.resourceGroupName = context_data.get("resourceGroupName")
         self.resourceProviderName = context_data.get("resourceProviderName")
         self.status = context_data.get("status")
         self.subStatus = context_data.get("subStatus")
-        # print(context_data.get("subscriptionId"))
         self.resourceType = context_data.get("resourceType")
         self.properties = data.get("data", {}).get("properties")
 
