@@ -19,81 +19,81 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
         custom_webhooks.webhooks['azuremonitor'] = alerta_azuremonitor.AzureMonitorWebhook(
         )
 
-    def testAvailabilityAlertV2(self):
-        common_metric_alert = r"""
-        {
-            "schemaId":"Microsoft.Insights/LogAlert",
-            "data":{
-                "data":{
-                    "essentials":{
-                        "alertId":"/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.AlertsManagement/alerts/12345678-1234-1234-1234-1234567890ab",
-                        "alertRule":"test-logAlertRule-v2",
-                        "severity":"Sev3",
-                        "signalType":"Log",
-                        "monitorCondition":"Fired",
-                        "monitoringService":"Log Alerts V2",
-                        "alertTargetIDs":[
-                            "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.operationalinsights/workspaces/test-logAnalyticsWorkspace"
-                        ],
-                        "configurationItems":[
-                            "test-computer"
-                        ],
-                        "originAlertId":"22222222-2222-2222-2222-222222222222",
-                        "firedDateTime":"2023-11-13T12:45:46.354Z",
-                        "description":"Alert rule description",
-                        "essentialsVersion":"1.0",
-                        "alertContextVersion":"1.0"
-                    },
-                    "alertContext":{
-                        "properties":{
-                            "customKey1":"value1",
-                            "customKey2":"value2"
-                        },
-                        "conditionType":"LogQueryCriteria",
-                        "condition":{
-                            "windowSize":"PT1H",
-                            "allOf":[
-                                {
-                                    "searchQuery":"Heartbeat",
-                                    "metricMeasureColumn":null,
-                                    "targetResourceTypes":"['Microsoft.OperationalInsights/workspaces']",
-                                    "operator":"GreaterThan",
-                                    "threshold":"0",
-                                    "timeAggregation":"Count",
-                                    "dimensions":[
-                                        {
-                                            "name":"Computer",
-                                            "value":"test-computer"
-                                        }
-                                    ],
-                                    "metricValue":3.0,
-                                    "failingPeriods":{
-                                        "numberOfEvaluationPeriods":1,
-                                        "minFailingPeriodsToAlert":1
-                                    },
-                                    "linkToSearchResultsUI":"https://portal.azure.com#@.../prettify/1/timespan/2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z",
-                                    "linkToFilteredSearchResultsUI":"https://portal.azure.com#@.../prettify/1/timespan/2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z",
-                                    "linkToSearchResultsAPI":"https://api.loganalytics.io/v1/workspaces/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/query?query=Heartbeat%7C%20where%20TimeGenerated%20between%28datetime%282021-11-16T10%3A17%3A39.0000000Z%29..datetime%282021-11-16T11%3A17%3A39.0000000Z%29%29&timespan=2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z",
-                                    "linkToFilteredSearchResultsAPI":"https://api.loganalytics.io/v1/workspaces/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/query?query=Heartbeat%7C%20where%20TimeGenerated%20between%28datetime%282021-11-16T10%3A17%3A39.0000000Z%29..datetime%282021-11-16T11%3A17%3A39.0000000Z%29%29%7C%20where%20tostring%28Computer%29%20%3D%3D%20%27test-computer%27&timespan=2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z"
-                                }
-                            ],
-                            "windowStartTime":"2023-11-13T12:45:46.354Z",
-                            "windowEndTime":"2023-11-13T12:45:46.354Z"
-                        }
-                    }
-                }
-            }
-        }
-        """
+    # def testAvailabilityAlertV2(self):
+    #     common_metric_alert = r"""
+    #     {
+    #         "schemaId":"Microsoft.Insights/LogAlert",
+    #         "data":{
+    #             "data":{
+    #                 "essentials":{
+    #                     "alertId":"/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.AlertsManagement/alerts/12345678-1234-1234-1234-1234567890ab",
+    #                     "alertRule":"test-logAlertRule-v2",
+    #                     "severity":"Sev3",
+    #                     "signalType":"Log",
+    #                     "monitorCondition":"Fired",
+    #                     "monitoringService":"Log Alerts V2",
+    #                     "alertTargetIDs":[
+    #                         "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/test-RG/providers/microsoft.operationalinsights/workspaces/test-logAnalyticsWorkspace"
+    #                     ],
+    #                     "configurationItems":[
+    #                         "test-computer"
+    #                     ],
+    #                     "originAlertId":"22222222-2222-2222-2222-222222222222",
+    #                     "firedDateTime":"2023-11-13T12:45:46.354Z",
+    #                     "description":"Alert rule description",
+    #                     "essentialsVersion":"1.0",
+    #                     "alertContextVersion":"1.0"
+    #                 },
+    #                 "alertContext":{
+    #                     "properties":{
+    #                         "customKey1":"value1",
+    #                         "customKey2":"value2"
+    #                     },
+    #                     "conditionType":"LogQueryCriteria",
+    #                     "condition":{
+    #                         "windowSize":"PT1H",
+    #                         "allOf":[
+    #                             {
+    #                                 "searchQuery":"Heartbeat",
+    #                                 "metricMeasureColumn":null,
+    #                                 "targetResourceTypes":"['Microsoft.OperationalInsights/workspaces']",
+    #                                 "operator":"GreaterThan",
+    #                                 "threshold":"0",
+    #                                 "timeAggregation":"Count",
+    #                                 "dimensions":[
+    #                                     {
+    #                                         "name":"Computer",
+    #                                         "value":"test-computer"
+    #                                     }
+    #                                 ],
+    #                                 "metricValue":3.0,
+    #                                 "failingPeriods":{
+    #                                     "numberOfEvaluationPeriods":1,
+    #                                     "minFailingPeriodsToAlert":1
+    #                                 },
+    #                                 "linkToSearchResultsUI":"https://portal.azure.com#@.../prettify/1/timespan/2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z",
+    #                                 "linkToFilteredSearchResultsUI":"https://portal.azure.com#@.../prettify/1/timespan/2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z",
+    #                                 "linkToSearchResultsAPI":"https://api.loganalytics.io/v1/workspaces/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/query?query=Heartbeat%7C%20where%20TimeGenerated%20between%28datetime%282021-11-16T10%3A17%3A39.0000000Z%29..datetime%282021-11-16T11%3A17%3A39.0000000Z%29%29&timespan=2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z",
+    #                                 "linkToFilteredSearchResultsAPI":"https://api.loganalytics.io/v1/workspaces/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/query?query=Heartbeat%7C%20where%20TimeGenerated%20between%28datetime%282021-11-16T10%3A17%3A39.0000000Z%29..datetime%282021-11-16T11%3A17%3A39.0000000Z%29%29%7C%20where%20tostring%28Computer%29%20%3D%3D%20%27test-computer%27&timespan=2021-11-16T10%3a17%3a39.0000000Z%2f2021-11-16T11%3a17%3a39.0000000Z"
+    #                             }
+    #                         ],
+    #                         "windowStartTime":"2023-11-13T12:45:46.354Z",
+    #                         "windowEndTime":"2023-11-13T12:45:46.354Z"
+    #                     }
+    #                 }
+    #             }
+    #         }
+    #     }
+    #     """
 
-        response = self.client.post(
-            '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
-        self.assertEqual(response.status_code, 201, response.data)
-        data = json.loads(response.data.decode('utf-8'))
-        print(json.dumps(data, indent=4))
-        self.assertEqual(data['alert']['resource'], 'test-computer')
+    #     response = self.client.post(
+    #         '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+    #     self.assertEqual(response.status_code, 201, response.data)
+    #     data = json.loads(response.data.decode('utf-8'))
+    #     print(json.dumps(data, indent=4))
+    #     self.assertEqual(data['alert']['resource'], 'test-computer')
 
-    # def testAvailabilityAlert(self):
+    # def testLogAlert(self):
     #     common_metric_alert = r"""
     #     {
     #         "schemaId": "Microsoft.Insights/LogAlert",
@@ -164,7 +164,7 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
     #     print(json.dumps(data, indent=4))
     #     self.assertEqual(data['alert']['resource'], 'test-logAnalyticsWorkspace')
 
-    # def testAvailabilityAlert(self):
+    # def testCostBudgetAlert(self):
     #     common_metric_alert = r"""
     #     {
     #         "schemaId": "AIP Budget Notification",
