@@ -246,7 +246,7 @@ class ActivityLog:
             self.level = activity_log_data.get("level")
             self.operationName = activity_log_data.get("operationName")
             self.operationId = activity_log_data.get("operationId")
-            self.properties = ActivityLog.Properties(activity_log_data.get("properties", {}))
+            self.properties = activity_log_data.get("properties", {})
             self.submissionTimestamp = parse_date(activity_log_data.get("submissionTimestamp"))
 
     def __init__(self, data):
@@ -271,6 +271,11 @@ class ActivityLog:
             properties_keys = self.properties.keys()
             for key in properties_keys:
                 attributes[key] = self.properties[key]
+
+        if self.activityLog.properties is not None:
+            properties_keys = self.activityLog.properties.keys()
+            for key in properties_keys:
+                attributes[key] = self.activityLog.properties[key]
 
         if self.subscriptionId:
             attributes.update({"subscriptionId": self.subscriptionId})
