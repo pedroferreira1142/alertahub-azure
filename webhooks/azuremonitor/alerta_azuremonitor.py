@@ -117,7 +117,7 @@ class AzureMonitorWebhook(WebhookBase):
                 else:
                     severity = SEVERITY_MAP_ACTIVITY_LOG[aLog.activityLog.level]
 
-                service=[aLog.resourceType]
+                service=[aLog.activityLog.resourceType]
                 group=aLog.resourceGroupName
                 value=aLog.status
                 text=aLog.activityLog.description
