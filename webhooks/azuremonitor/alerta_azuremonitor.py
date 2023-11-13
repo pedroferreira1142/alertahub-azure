@@ -45,6 +45,7 @@ class AzureMonitorWebhook(WebhookBase):
         attributes = {}
         tags = []
         value = []
+        event_type = ""
         if 'data' in payload:
             if payload['schemaId'] == 'azureMonitorCommonAlertSchema':
                 context = payload['data']['alertContext']
@@ -125,7 +126,7 @@ class AzureMonitorWebhook(WebhookBase):
                 create_time=aLog.activityLog.submissionTimestamp
 
             # ================================ Availibilty Alert
-            elif payload['schemaId'] == 'AzureMonitorMetricAlert' and "availability" in payload['data']['data']['context']['id']:
+            elif payload['schemaId'] == 'AzureMonitorMetricAlert' and "data" in payload and "data" in payload['data'] and "availability" in payload['data']['data']['context']['id']:
                 environment='Production'
                 event_type = "Availibilty Alert"
                 aAlert = AvailibiltyAlert(payload)
