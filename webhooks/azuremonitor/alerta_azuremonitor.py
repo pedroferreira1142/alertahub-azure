@@ -152,7 +152,7 @@ class AzureMonitorWebhook(WebhookBase):
                     aAlert.allOf[0]['metricName'])
                 create_time=aAlert.createTime
 
-            # ================================ Availibilty Alert
+            # ================================ CostBudgetAlert
             elif payload['schemaId'] == 'AIP Budget Notification':
                 environment='Production'
                 event_type = "Cost Budget Alert"
@@ -174,6 +174,28 @@ class AzureMonitorWebhook(WebhookBase):
                 value = cAlert.spendingAmount
                 create_time=cAlert.budgetStartDate
 
+            # ================================ LogAlertV1
+            elif payload['schemaId'] == 'Microsoft.Insights/LogAlert':
+                lAlert = LogAlertV1(payload)
+                resourceGroup, resourceName = lAlert.extractValues()
+
+                environment='Production'
+                event_type = "Log Alert"
+                severity = SEVERITY_MAP[lAlert.severity]
+                resource=resourceName
+                event=lAlert.schemaId
+                attributes = lAlert.extractAttributes()
+                service = [lAlert.alertType]
+                group=resourceGroup
+                tags= []
+                text = '{}: {} {} {} ({})'.format(
+                    severity.upper(),
+                    lAlert.alertRuleName,
+                    lAlert.alertType,
+                    lAlert.searchQuery,
+                    lAlert.description)
+                value = lAlert.searchQuery
+                create_time=lAlert.searchIntervalStartTimeUtc
             else:
                 context = payload['data']['context']
 
@@ -204,12 +226,11 @@ class AzureMonitorWebhook(WebhookBase):
                 value = '{} {}'.format(
                     context['condition']['allOf'][0]['metricValue'],
                     context['condition']['allOf'][0]['metricName'])
-            else:
+            elif event_type != "Log Alert" and event_type != "Availibilty Alert" and event_type != "Activity Logs":
                 text = '{}'.format(severity.upper())
                 value = ''
                 event_type = 'EventAlert'
 
-            
         else:
             context = payload['context']
 
@@ -413,3 +434,71 @@ class CostBudgetAlert:
             attributes.update({"subscriptionId": self.subscriptionId})
 
         return attributes
+class LogAlertV1:
+    def __init__(self, payload):
+        data = payload.get('data')
+        self.schemaId = data.get("schemaId", "Microsoft.Insights/LogAlert")
+        self.subscriptionId = data.get("SubscriptionId")
+        self.alertRuleName = data.get("AlertRuleName", "")
+        self.searchQuery = data.get("SearchQuery", "")
+        self.searchIntervalStartTimeUtc = self.parse_date(data.get("SearchIntervalStartTimeUtc", ""))
+        self.searchIntervalEndtimeUtc = self.parse_date(data.get("SearchIntervalEndtimeUtc", ""))
+        self.alertThresholdOperator = data.get("AlertThresholdOperator", "")
+        self.alertThresholdValue = data.get("AlertThresholdValue", 0)
+        self.resultCount = data.get("ResultCount", 0)
+        self.searchIntervalInSeconds = data.get("SearchIntervalInSeconds", 0)
+        self.linkToSearchResults = data.get("LinkToSearchResults", "")
+        self.linkToFilteredSearchResultsUI = data.get("LinkToFilteredSearchResultsUI", "")
+        self.linkToSearchResultsAPI = data.get("LinkToSearchResultsAPI", "")
+        self.linkToFilteredSearchResultsAPI = data.get("LinkToFilteredSearchResultsAPI", "")
+        self.description = data.get("Description", "")
+        self.severity = data.get("Severity", "")
+        self.searchResult = self.parse_search_result(data.get("SearchResult", {}))
+        self.workspaceId = data.get("WorkspaceId", "")
+        self.resourceId = data.get("ResourceId", "")
+        self.alertType = data.get("AlertType", "")
+        self.dimensions = data.get("Dimensions", [])
+
+    def parse_search_result(self, search_result):
+        tables = []
+        for table in search_result.get("tables", []):
+            columns = [{"name": col["name"], "type": col["type"]} for col in table.get("columns", [])]
+            rows = [[row for row in table_row] for table_row in table.get("rows", [])]
+            tables.append({"name": table.get("name", ""), "columns": columns, "rows": rows})
+
+        data_sources = []
+        for data_source in search_result.get("dataSources", []):
+            tables = data_source.get("tables", [])
+
+            data_sources.append({
+                "resourceId": data_source.get("resourceId", ""),
+                "region": data_source.get("region", ""),
+                "tables": tables
+            })
+
+        return {"tables": tables, "dataSources": data_sources}
+    
+    def extractAttributes(self):
+        attributes = {}
+        print("======================================")
+        print(self.subscriptionId)
+        if self.subscriptionId:
+            attributes.update({"subscriptionId": self.subscriptionId})
+        return attributes
+
+    def extractValues(self):
+
+        if self.resourceId is not None:
+            # Extract value after "resourceGroups"
+            match_rg = re.search(r'/resourceGroups/([^/]+)', self.resourceId)
+            resourceGroup = match_rg.group(1) if match_rg else None
+
+            # Extract last substring after "/"
+            resourceName = self.resourceId.split('/')[-1]
+
+            return resourceGroup, resourceName
+        
+    def parse_date(self, date_str):
+        if date_str:
+            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return None
