@@ -595,3 +595,79 @@ class LogAlertV2:
             return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
         return None
     
+
+class AzureMonitorAlertParser:
+    def __init__(self, payload, query_string=None):
+        self.attributes = {}
+        self.parse_payload(payload, query_string)
+
+    def parse_payload(self, payload, query_string):
+        context = payload['data']['alertContext']
+        environment = query_string.get('environment', 'Production')
+        event = payload['data']['essentials']['monitoringService'] if payload['data']['essentials']['alertRule'] is None else payload['data']['essentials']['alertRule']
+
+        if hasattr(context, 'condition') and getattr(context, 'condition') is not None:
+            value = '{} {}'.format(context['condition']['allOf'][0]['metricValue'], context['condition']['allOf'][0]['metricName'])
+        elif 'properties' in context:
+            value = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
+
+        group = payload['data']['essentials']['signalType']
+        service = [payload['data']['essentials']['monitoringService']]
+        
+        if 'configurationItems' in payload['data']['essentials'] and len(payload['data']['essentials']['configurationItems']) > 0:
+            resource = payload['data']['essentials']['configurationItems'][0]
+        elif 'configurationItems' in payload['data']['essentials'] and len(payload['data']['essentials']['configurationItems']) == 0:
+            resource = payload['data']['essentials']['alertTargetIDs'][0].split("/")[-1]
+        elif 'properties' in context and 'service' in context['properties']:
+            resource = context['properties']['service']
+
+        event_type = payload['data']['essentials']['signalType']
+
+        if 'properties' in context and context['properties'] is not None:
+            properties_keys = context['properties'].keys()
+            for key in properties_keys:
+                self.attributes[key] = context['properties'][key]
+
+        pattern = r'/subscriptions/[0-9a-fA-F-]+'
+        self.attributes.update({
+            "subscriptionId": re.sub(pattern, '', payload['data']['essentials']['alertTargetIDs'][0]) 
+                if payload['data']['essentials']['alertTargetIDs'] and len(payload['data']['essentials']['alertTargetIDs']) >= 0 
+                else ""
+        })
+        create_time = parse_date(payload['data']['essentials']['firedDateTime'])
+
+        if hasattr(payload['data'], 'customProperties') and getattr(payload['data'], 'customProperties') is not None:
+            tags = [] if payload['data']['customProperties'] is None else ['{}={}'.format(k, v) for k, v in payload['data']['customProperties'].items()]
+        elif 'properties' in context:
+            tags = [] if context['properties'] is None else ['{}={}'.format(k, v) for k, v in context['properties'].items()]
+
+        if payload['data']['essentials']['monitorCondition'] == 'Resolved' or payload['data']['essentials']['monitorCondition'] == 'Deactivated':
+            severity = 'ok'
+        else:
+            # Assuming SEVERITY_MAP_COMMON and DEFAULT_SEVERITY_LEVEL_COMMON are defined
+            severity = SEVERITY_MAP_COMMON.get(context.get('severity', DEFAULT_SEVERITY_LEVEL_COMMON), 'unknown')
+
+        if hasattr(context, 'condition') and getattr(context, 'condition') is not None:
+            text = '{}: {} {} ({} {})'.format(
+                severity.upper(),
+                context['condition']['allOf'][0]['metricValue'],
+                context['condition']['allOf'][0]['metricName'],
+                context['condition']['allOf'][0]['operator'],
+                context['condition']['allOf'][0]['threshold'])
+        else:
+            text = payload['data']['essentials']['description']
+
+        # Assigning values to individual properties
+        self.context = context
+        self.environment = environment
+        self.event = event
+        self.group = group
+        self.service = service
+        self.resource = resource
+        self.event_type = event_type
+        self.attributes = self.attributes
+        self.value = value
+        self.create_time = create_time
+        self.severity = severity
+        self.text = text
+        self.tags = tags
