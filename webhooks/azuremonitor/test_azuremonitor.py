@@ -19,6 +19,71 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
         custom_webhooks.webhooks['azuremonitor'] = alerta_azuremonitor.AzureMonitorWebhook(
         )
 
+    def testServiceHealth(self):
+        common_metric_alert = r"""
+        {
+            "schemaId":"Microsoft.Insights/activityLogs",
+            "data":{
+                "status":"Activated",
+                "context":{
+                    "activityLog":{
+                        "channels":"Admin",
+                        "correlationId":"11223344-1234-5678-abcd-aabbccddeeff",
+                        "description":"This alert rule will trigger when there are updates to a service issue impacting subscription <name>.",
+                        "eventSource":"ServiceHealth",
+                        "eventTimestamp":"2023-11-13T16:39:47.558Z",
+                        "eventDataId":"12345678-1234-1234-1234-1234567890ab",
+                        "level":"Warning",
+                        "operationName":"Microsoft.ServiceHealth/incident/action",
+                        "operationId":"12345678-abcd-efgh-ijkl-abcd12345678",
+                        "properties":{
+                            "title":"Test Action Group - Test Service Health Alert",
+                            "service":"Azure Service Name",
+                            "region":"Global",
+                            "communication":"<p>This is a test from Service Health Alert</p>",
+                            "incidentType":"Incident",
+                            "trackingId":"TEST-TTT",
+                            "impactStartTime":"2023-11-13T16:39:47.558Z",
+                            "impactMitigationTime":"2023-11-13T16:39:47.558Z",
+                            "impactedServices":[
+                                {
+                                    "ImpactedRegions":[
+                                        {
+                                            "RegionName":"Global"
+                                        }
+                                    ],
+                                    "ServiceName":"Azure Service Name"
+                                }
+                            ],
+                            "impactedServicesTableRows":"<tr><td>This is a test from service health alert</<td>/<tr>",
+                            "defaultLanguageTitle":"Test Action Group - Test Service Health Alert",
+                            "defaultLanguageContent":"<p>This is a test from Service Health Alert</p>",
+                            "stage":"Resolved",
+                            "communicationId":"11223344556677",
+                            "isHIR":"false",
+                            "isSynthetic":"True",
+                            "impactType":"SubscriptionList",
+                            "version":"0.1.1"
+                        },
+                        "status":"Resolved",
+                        "subscriptionId":"11111111-1111-1111-1111-111111111111",
+                        "submissionTimestamp":"2023-11-13T16:39:47.558Z"
+                    }
+                },
+                "properties":{
+                    
+                }
+            }
+        }
+        """
+
+        response = self.client.post(
+            '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+        self.assertEqual(response.status_code, 201, response.data)
+        data = json.loads(response.data.decode('utf-8'))
+        print(json.dumps(data, indent=4))
+        self.assertEqual(data['alert']['resource'], 'Azure Service Name')
+
     def testResourceHealth(self):
         common_metric_alert = r"""
         {
@@ -296,59 +361,59 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
     #     print(json.dumps(data, indent=4))
     #     self.assertEqual(data['alert']['resource'], 'test-availabilityTest-test-applicationInsights')
 
-    # def testActivityLog(self):
-    #     common_metric_alert = r"""
-    #     {
-    #         "schemaId": "Microsoft.Insights/activityLogs",
-    #         "data": {
-    #             "status": "Activated",
-    #             "context": {
-    #                 "activityLog": {
-    #                     "authorization": {
-    #                         "action": "Microsoft.Compute/virtualMachines/restart/action",
-    #                         "scope": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM3"
-    #                     },
-    #                     "channels": "Operation",
-    #                     "claims": "{}",
-    #                     "caller": "user-email@domain.com",
-    #                     "correlationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-    #                     "description": "",
-    #                     "eventSource": "Administrative",
-    #                     "eventTimestamp": "2023-11-13T09:26:42.848Z",
-    #                     "eventDataId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-    #                     "level": "Informational",
-    #                     "operationName": "Microsoft.Compute/virtualMachines/restart/action",
-    #                     "operationId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
-    #                     "properties": {
-    #                         "eventCategory": "Administrative",
-    #                         "entity": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
-    #                         "message": "Microsoft.Compute/virtualMachines/restart/action",
-    #                         "hierarchy": "22222222-2222-2222-2222-222222222222/CnAIOrchestrationServicePublicCorpprod/33333333-3333-3333-3333-3333333303333/44444444-4444-4444-4444-444444444444/55555555-5555-5555-5555-555555555555/11111111-1111-1111-1111-111111111111"
-    #                     },
-    #                     "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
-    #                     "resourceGroupName": "test-RG",
-    #                     "resourceProviderName": "Microsoft.Compute",
-    #                     "status": "Succeeded",
-    #                     "subStatus": "",
-    #                     "subscriptionId": "11111111-1111-1111-1111-111111111111",
-    #                     "submissionTimestamp": "2023-11-13T09:26:42.848Z",
-    #                     "resourceType": "Microsoft.Compute/virtualMachines"
-    #                 }
-    #             },
-    #             "properties": {
-    #                 "customKey1": "value1",
-    #                 "customKey2": "value2"
-    #             }
-    #         }
-    #     }
-    #     """
+    def testActivityLog(self):
+        common_metric_alert = r"""
+        {
+            "schemaId": "Microsoft.Insights/activityLogs",
+            "data": {
+                "status": "Activated",
+                "context": {
+                    "activityLog": {
+                        "authorization": {
+                            "action": "Microsoft.Compute/virtualMachines/restart/action",
+                            "scope": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM3"
+                        },
+                        "channels": "Operation",
+                        "claims": "{}",
+                        "caller": "user-email@domain.com",
+                        "correlationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                        "description": "",
+                        "eventSource": "Administrative",
+                        "eventTimestamp": "2023-11-13T09:26:42.848Z",
+                        "eventDataId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                        "level": "Informational",
+                        "operationName": "Microsoft.Compute/virtualMachines/restart/action",
+                        "operationId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                        "properties": {
+                            "eventCategory": "Administrative",
+                            "entity": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
+                            "message": "Microsoft.Compute/virtualMachines/restart/action",
+                            "hierarchy": "22222222-2222-2222-2222-222222222222/CnAIOrchestrationServicePublicCorpprod/33333333-3333-3333-3333-3333333303333/44444444-4444-4444-4444-444444444444/55555555-5555-5555-5555-555555555555/11111111-1111-1111-1111-111111111111"
+                        },
+                        "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/test-RG/providers/Microsoft.Compute/virtualMachines/test-VM",
+                        "resourceGroupName": "test-RG",
+                        "resourceProviderName": "Microsoft.Compute",
+                        "status": "Succeeded",
+                        "subStatus": "",
+                        "subscriptionId": "11111111-1111-1111-1111-111111111111",
+                        "submissionTimestamp": "2023-11-13T09:26:42.848Z",
+                        "resourceType": "Microsoft.Compute/virtualMachines"
+                    }
+                },
+                "properties": {
+                    "customKey1": "value1",
+                    "customKey2": "value2"
+                }
+            }
+        }
+        """
 
-    #     response = self.client.post(
-    #         '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
-    #     self.assertEqual(response.status_code, 201, response.data)
-    #     data = json.loads(response.data.decode('utf-8'))
-    #     print(json.dumps(data, indent=4))
-    #     self.assertEqual(data['alert']['resource'], 'test-VM3')
+        response = self.client.post(
+            '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
+        self.assertEqual(response.status_code, 201, response.data)
+        data = json.loads(response.data.decode('utf-8'))
+        print(json.dumps(data, indent=4))
+        self.assertEqual(data['alert']['resource'], 'test-VM3')
     
     # def test_azure_service_health_common(self):
     #     common_metric_alert = r"""

@@ -107,9 +107,17 @@ class AzureMonitorWebhook(WebhookBase):
                 environment='Production'
                 event_type = "Activity Logs"
                 aLog = ActivityLog(payload)
-
                 attributes = aLog.extractAttributes()
-                resource=aLog.activityLog.resourceId.split("/")[-1] if not hasattr(aLog.activityLog, 'authorization') else aLog.activityLog.authorization.scope.split("/")[-1]
+                
+                if (not hasattr(aLog.activityLog, 'authorization') and hasattr(aLog.activityLog, 'resourceId') and aLog.activityLog.resourceId is not None):
+                    resource=aLog.activityLog.resourceId.split("/")[-1]
+                elif(hasattr(aLog.activityLog, 'authorization')):
+                    resource = aLog.activityLog.authorization.scope.split("/")[-1]
+                elif ("service" in aLog.activityLog.properties):
+                    resource = aLog.activityLog.properties['service']
+                else:
+                    resource = "Not applicable"
+                    
                 event=aLog.activityLog.operationName
 
                 if aLog.status == 'Resolved' or aLog.status == 'Deactivated':
@@ -347,7 +355,7 @@ class ActivityLog:
             self.level = activity_log_data.get("level")
             self.operationName = activity_log_data.get("operationName")
             self.operationId = activity_log_data.get("operationId")
-            self.properties = activity_log_data.get("properties", {})
+            self.properties = activity_log_data.get("properties")
             if ("submissionTimestamp" in activity_log_data):
                 self.submissionTimestamp = parse_date(activity_log_data.get("submissionTimestamp"))
             self.subscriptionId = activity_log_data.get("subscriptionId")
@@ -586,3 +594,4 @@ class LogAlertV2:
         if date_str:
             return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
         return None
+    
