@@ -40,10 +40,10 @@ class UpdateZabbixWebhook(WebhookBase):
    
     def incoming(self, query_string, payload):
 
+        alert = Alert.find_by_id(payload['alertId'], customers=g.get('customers', None))
         eventId = alert.attributes.get('eventId', None)
         triggerId = alert.attributes.get('triggerId', None)
         
-        alert = Alert.find_by_id(payload['alertId'], customers=g.get('customers', None))
 
          # login to zabbix
         zabbix_api_url = ZABBIX_API_URL or alert.attributes.get('zabbixUrl', DEFAULT_ZABBIX_API_URL)
