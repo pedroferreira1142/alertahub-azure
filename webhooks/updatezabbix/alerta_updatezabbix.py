@@ -111,4 +111,4 @@ class UpdateZabbixWebhook(WebhookBase):
             LOG.debug('Zabbix: event.acknowledge(closed) => %s', r)
             text = text + ' (closed in Zabbix)'
 
-        return alert, payload['status']
+        return alert
