@@ -67,12 +67,12 @@ class UpdateZabbixWebhook(WebhookBase):
             try:
                 LOG.debug('Zabbix: ack all events for trigger...')
                 r = self.zapi.event.acknowledge(eventids=event_ids, action=(
-                    ACTION_ACK | ACTION_MSG), message='{}: {}'.format(payload['status']))
+                    ACTION_ACK | ACTION_MSG), message='{}: {}'.format(payload['status'], text))
             except ZabbixAPIException:
                 try:
                     LOG.debug('Zabbix: ack all failed, ack only the one event')
                     r = self.zapi.event.acknowledge(eventids=eventId, action=(
-                        ACTION_ACK | ACTION_MSG), message='{}: {}'.format(payload['status']))
+                        ACTION_ACK | ACTION_MSG), message='{}: {}'.format(payload['status'], text))
                 except ZabbixAPIException as e:
                     raise RuntimeError('Zabbix: ERROR - %s', e)
             finally:
