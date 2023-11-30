@@ -59,8 +59,12 @@ class AzureMonitorWebhook(WebhookBase):
 
                 group = payload['data']['essentials']['signalType']
                 service = [payload['data']['essentials']['monitoringService']]
+
                 if 'configurationItems' in payload['data']['essentials'] and len(payload['data']['essentials']['configurationItems']) > 0:
-                    resource = payload['data']['essentials']['configurationItems'][0]
+                    if "/" in payload['data']['essentials']['configurationItems'][0]:
+                        resource = payload['data']['essentials']['configurationItems'][0].split("/")[-1]
+                    else:
+                        resource = payload['data']['essentials']['configurationItems'][0]
                 elif ('configurationItems' in payload['data']['essentials'] and len(payload['data']['essentials']['configurationItems']) == 0):
                     resource = payload['data']['essentials']['alertTargetIDs'][0].split("/")[-1]
                 elif ('properties' in context and 'service' in context['properties']):
@@ -73,12 +77,12 @@ class AzureMonitorWebhook(WebhookBase):
                     for key in properties_keys:
                         attributes[key] = context['properties'][key]
 
-                pattern = r'/subscriptions/[0-9a-fA-F-]+'
+                pattern = r"/subscriptions/([^/]+)"
+                match = re.search(pattern, payload['data']['essentials']['alertTargetIDs'][0])  if payload['data']['essentials']['alertTargetIDs'] and len(payload['data']['essentials']['alertTargetIDs']) >= 0  else ""
                 attributes.update({
-                    "subscriptionId": re.sub(pattern, '', payload['data']['essentials']['alertTargetIDs'][0]) 
-                        if payload['data']['essentials']['alertTargetIDs'] and len(payload['data']['essentials']['alertTargetIDs']) >= 0 
-                        else ""
+                    "subscriptionId": match.group(1)
                 })
+
                 create_time = parse_date(payload['data']['essentials']['firedDateTime'])
                 
                 if (hasattr(payload['data'], 'customProperties') and getattr(payload['data'], 'customProperties') is not None):
@@ -473,6 +477,9 @@ class CostBudgetAlert:
             attributes.update({"subscriptionId": self.subscriptionId})
 
         return attributes
+
+def autoCapitalize(obj, str, default):
+    return obj.get(str, default) if obj.get(str, default) != default else obj.get(str.capitalize(), default)
 class LogAlertV1:
     def __init__(self, payload):
         data = payload.get('data')
@@ -494,7 +501,7 @@ class LogAlertV1:
         self.severity = data.get("Severity", "")
         self.searchResult = self.parse_search_result(data.get("SearchResult", {}))
         self.workspaceId = data.get("WorkspaceId", "")
-        self.resourceId = data.get("ResourceId", "")
+        self.resourceId = data.get("ResourceId", "") if data.get("ResourceId", "") != "" else data.get("resourceId", "")
         self.alertType = data.get("AlertType", "")
         self.dimensions = data.get("Dimensions", [])
 
@@ -519,23 +526,19 @@ class LogAlertV1:
     
     def extractAttributes(self):
         attributes = {}
-        print("======================================")
-        print(self.subscriptionId)
         if self.subscriptionId:
             attributes.update({"subscriptionId": self.subscriptionId})
         return attributes
 
-    def extractValues(self):
+    def extractValues(self):        
+        # Extract value after "resourceGroups"
+        match_rg = re.search(r'/resourceGroups/([^/]+)', self.searchResult.get('dataSources')[0].get('resourceId'))
+        resourceGroup = match_rg.group(1) if match_rg else None
 
-        if self.resourceId is not None:
-            # Extract value after "resourceGroups"
-            match_rg = re.search(r'/resourceGroups/([^/]+)', self.resourceId)
-            resourceGroup = match_rg.group(1) if match_rg else None
+        # Extract last substring after "/"
+        resourceName = self.searchResult.get('dataSources')[0].get('resourceId').split('/')[-1]
 
-            # Extract last substring after "/"
-            resourceName = self.resourceId.split('/')[-1]
-
-            return resourceGroup, resourceName
+        return resourceGroup, resourceName
         
     def parse_date(self, date_str):
         if date_str:
@@ -569,17 +572,19 @@ class LogAlertV2:
 
     def extractResourceName(self):
         if (len(self.configurationItems) > 0):
-            return self.configurationItems[0]
-        elif (len(self.configurationItems)== 0):
+            if ("/" in self.configurationItems[0]):
+                return self.configurationItems[0].split("/")[-1]
+            else:
+                return self.configurationItems
+        elif (len(self.configurationItems) == 0):
             return self.alertTargetIDs[0].split("/")[-1]
         
     def extractSubscriptionId(self):
         attributes = {}
-        pattern = r'/subscriptions/[0-9a-fA-F-]+'
+        pattern = r"/subscriptions/([^/]+)"
+        match = re.search(pattern, self.alertTargetIDs[0])  if self.alertTargetIDs and len(self.alertTargetIDs) >= 0 else ""
         attributes.update({
-            "subscriptionId": re.sub(pattern, '', self.alertTargetIDs[0]) 
-                if self.alertTargetIDs and len(self.alertTargetIDs) >= 0 
-                else ""
+            "subscriptionId": match.group(1)
         })
 
         return attributes
