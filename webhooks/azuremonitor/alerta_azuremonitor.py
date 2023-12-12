@@ -335,7 +335,7 @@ class AzureMonitorWebhook(WebhookBase):
             id=alert.id,
             event=alert.event,
             severity=alert.severity,
-            status=alert.status,
+            status='open',
             value=alert.value,
             text=text,
             change_type='note',
