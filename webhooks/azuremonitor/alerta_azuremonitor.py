@@ -350,7 +350,7 @@ class AzureMonitorWebhook(WebhookBase):
         print("================")
         print(alert)
 
-        return test
+        return alert
 
 
 
