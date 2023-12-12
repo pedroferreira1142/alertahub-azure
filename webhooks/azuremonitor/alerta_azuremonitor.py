@@ -1,6 +1,7 @@
 import json
 
 from alerta.models.alert import Alert
+from alerta.models.alert import History
 from alerta.webhooks import WebhookBase
 from dateutil.parser import parse as parse_date
 import re
@@ -324,11 +325,32 @@ class AzureMonitorWebhook(WebhookBase):
             origin='Azure Monitor',
             type=event_type,
             create_time=create_time,
-            raw_data=json.dumps(payload)
+            raw_data=json.dumps(payload),
+            status="open"
         )
-        alert.set_status("open", "Status update", 86000)
+        alert = alert.set_status("shelved")
+        # new.find_by_id(alert.id)
+        test = alert.add_note("teste")
+        history = History(
+            id=alert.id,
+            event=alert.event,
+            severity=alert.severity,
+            status=alert.status,
+            value=alert.value,
+            text=text,
+            change_type='note',
+            update_time=datetime.utcnow(),
+            user='g.login'
+        )
+        
+        print(test)
 
-        return alert
+        print("================")
+        # print(new)
+        print("================")
+        print(alert)
+
+        return test
 
 
 

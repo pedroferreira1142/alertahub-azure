@@ -363,7 +363,7 @@ class AzureMonitoringWebhookTestCase(unittest.TestCase):
             '/webhooks/azuremonitor', data=common_metric_alert, content_type='application/json')
         self.assertEqual(response.status_code, 201, response.data)
         data = json.loads(response.data.decode('utf-8'))
-        # print(json.dumps(data, indent=4))
+        print(json.dumps(data, indent=4))
         self.assertEqual(data['alert']['resource'], 'test-logAnalyticsWorkspace')
 
     # def testCostBudgetAlert(self):
