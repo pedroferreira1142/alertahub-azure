@@ -328,7 +328,7 @@ class AzureMonitorWebhook(WebhookBase):
             raw_data=json.dumps(payload),
             status="open"
         )
-        alert = alert.set_status("shelved")
+        # alert = alert.set_status("shelved")
         # new.find_by_id(alert.id)
         test = alert.add_note("teste")
         history = History(
