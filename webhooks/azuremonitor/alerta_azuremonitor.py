@@ -324,9 +324,9 @@ class AzureMonitorWebhook(WebhookBase):
             origin='Azure Monitor',
             type=event_type,
             create_time=create_time,
-            raw_data=json.dumps(payload),
-            status="open"
+            raw_data=json.dumps(payload)
         )
+        alert.set_status("open", "Status update", 86000)
 
         return alert
 
