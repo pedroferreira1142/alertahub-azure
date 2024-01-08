@@ -1,7 +1,6 @@
 import json
 
 from alerta.models.alert import Alert
-from alerta.models.alert import History
 from alerta.webhooks import WebhookBase
 from dateutil.parser import parse as parse_date
 import re
@@ -47,6 +46,7 @@ class AzureMonitorWebhook(WebhookBase):
         tags = []
         value = []
         event_type = ""
+        event = ""
         if 'data' in payload:
             if payload['schemaId'] == 'azureMonitorCommonAlertSchema':
                 context = payload['data']['alertContext']
@@ -81,7 +81,7 @@ class AzureMonitorWebhook(WebhookBase):
                 pattern = r"/subscriptions/([^/]+)"
                 match = re.search(pattern, payload['data']['essentials']['alertTargetIDs'][0])  if payload['data']['essentials']['alertTargetIDs'] and len(payload['data']['essentials']['alertTargetIDs']) >= 0  else ""
                 attributes.update({
-                    "subscriptionId": match.group(1)
+                    "subscriptionId": match.group(1) if payload['data']['essentials']['alertTargetIDs'] is not None and len(payload['data']['essentials']['alertTargetIDs']) >= 0 else ""
                 })
 
                 create_time = parse_date(payload['data']['essentials']['firedDateTime'])
@@ -224,7 +224,7 @@ class AzureMonitorWebhook(WebhookBase):
                     severity = SEVERITY_MAP_COMMON[lAlert.severity]  
 
                 resource=resourceName
-                event=lAlert.schemaId
+                event=lAlert.alertRuleName
                 attributes = lAlert.extractAttributes()
                 service = [lAlert.alertType]
                 group=resourceGroup
@@ -312,8 +312,8 @@ class AzureMonitorWebhook(WebhookBase):
             event_type = '{}Alert'.format(context['conditionType'])
             create_time = parse_date(context['timestamp'])
         alert = Alert(
-            resource=resource,
-            event=event,
+            resource=resource.lower(),
+            event=event.lower(),
             environment=environment,
             severity=severity,
             service=service,
@@ -325,30 +325,8 @@ class AzureMonitorWebhook(WebhookBase):
             origin='Azure Monitor',
             type=event_type,
             create_time=create_time,
-            raw_data=json.dumps(payload),
-            status="open"
+            raw_data=json.dumps(payload)
         )
-        # alert = alert.set_status("shelved")
-        # new.find_by_id(alert.id)
-        test = alert.add_note("teste")
-        history = History(
-            id=alert.id,
-            event=alert.event,
-            severity=alert.severity,
-            status='open',
-            value=alert.value,
-            text=text,
-            change_type='note',
-            update_time=datetime.utcnow(),
-            user='g.login'
-        )
-        
-        print(test)
-
-        print("================")
-        # print(new)
-        print("================")
-        print(alert)
 
         return alert
 
@@ -489,9 +467,14 @@ class CostBudgetAlert:
         self.notificationThresholdAmount = float(self.data.get("NotificationThresholdAmount", 0.0))
 
     def parse_date(self, date_str):
-        if date_str:
+        if (self.is_valid_date_format(date_str) and date_str):
             return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-        return None
+        else:
+            return datetime.now()
+        
+    def is_valid_date_format(self, date_str):
+        pattern = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{6}Z')
+        return bool(pattern.match(date_str))
     
     def extractAttributes(self):
         attributes = {}
@@ -500,9 +483,6 @@ class CostBudgetAlert:
             attributes.update({"subscriptionId": self.subscriptionId})
 
         return attributes
-
-def autoCapitalize(obj, str, default):
-    return obj.get(str, default) if obj.get(str, default) != default else obj.get(str.capitalize(), default)
 class LogAlertV1:
     def __init__(self, payload):
         data = payload.get('data')
@@ -524,7 +504,7 @@ class LogAlertV1:
         self.severity = data.get("Severity", "")
         self.searchResult = self.parse_search_result(data.get("SearchResult", {}))
         self.workspaceId = data.get("WorkspaceId", "")
-        self.resourceId = data.get("ResourceId", "") if data.get("ResourceId", "") != "" else data.get("resourceId", "")
+        self.resourceId = data.get("ResourceId", "")
         self.alertType = data.get("AlertType", "")
         self.dimensions = data.get("Dimensions", [])
 
@@ -555,18 +535,36 @@ class LogAlertV1:
 
     def extractValues(self):        
         # Extract value after "resourceGroups"
-        match_rg = re.search(r'/resourceGroups/([^/]+)', self.searchResult.get('dataSources')[0].get('resourceId'))
-        resourceGroup = match_rg.group(1) if match_rg else None
+        if (self.searchResult and self.searchResult.get('dataSources') and self.searchResult['dataSources']):
+            match_rg = re.search(r'/resourceGroups/([^/]+)', self.searchResult.get('dataSources')[0].get('resourceId'))
+            resourceGroup = match_rg.group(1) if match_rg else None
 
-        # Extract last substring after "/"
-        resourceName = self.searchResult.get('dataSources')[0].get('resourceId').split('/')[-1]
+            # Extract last substring after "/"
+            resourceName = self.searchResult.get('dataSources')[0].get('resourceId').split('/')[-1]
+        else:
+            pattern = r"components%2F([^%]+)"
+            patternRGroup = r"resourceGroups%2F([^%]+)"
+
+            # Search for the pattern in the URL
+            matchRGroup = re.search(patternRGroup, self.linkToFilteredSearchResultsUI)
+            match = re.search(pattern, self.linkToFilteredSearchResultsUI)
+
+            if match and matchRGroup:
+                # Extract the resource name from the match
+                resourceName = match.group(1)
+                resourceGroup = matchRGroup.group(1)
 
         return resourceGroup, resourceName
         
     def parse_date(self, date_str):
-        if date_str:
+        if (self.is_valid_date_format(date_str) and date_str):
             return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-        return None
+        else:
+            return datetime.now()
+        
+    def is_valid_date_format(self, date_str):
+        pattern = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{6}Z')
+        return bool(pattern.match(date_str))
     
 class LogAlertV2:
     def __init__(self, data):
@@ -595,11 +593,8 @@ class LogAlertV2:
 
     def extractResourceName(self):
         if (len(self.configurationItems) > 0):
-            if ("/" in self.configurationItems[0]):
-                return self.configurationItems[0].split("/")[-1]
-            else:
-                return self.configurationItems
-        elif (len(self.configurationItems) == 0):
+            return self.configurationItems[0]
+        elif (len(self.configurationItems)== 0):
             return self.alertTargetIDs[0].split("/")[-1]
         
     def extractSubscriptionId(self):
@@ -619,9 +614,14 @@ class LogAlertV2:
             return self.description
         
     def parse_date(self, date_str):
-        if date_str:
+        if (self.is_valid_date_format(date_str)):
             return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-        return None
+        else:
+            return datetime.now()
+        
+    def is_valid_date_format(self, date_str):
+        pattern = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{6}Z')
+        return bool(pattern.match(date_str))
     
 
 class AzureMonitorAlertParser:
